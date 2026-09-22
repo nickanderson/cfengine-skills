@@ -1,0 +1,93 @@
+body common control
+{
+      bundlesequence => { "main" };
+}
+
+bundle agent main
+# @brief Define lowercase has_<service> classes from inventory and run the
+# matching service bundles.
+#
+# Class names are case-sensitive in CFEngine, so the service names are
+# normalized (string_downcase + canonify) before the classes are defined.
+# The only_if expressions are used as written; they are expected to refer to
+# the normalized, lowercase has_<service> classes.
+{
+  vars:
+      "inventory"
+        data => readjson("$(this.promise_dirname)/inventory.json");
+
+      "i"
+        slist => getindices("inventory[services]");
+
+      # "Node-Exporter", "NODE-EXPORTER", "node-exporter" -> "node_exporter"
+      "service[$(i)]"
+        string => canonify(string_downcase("$(inventory[services][$(i)][name])"));
+
+      # Condition that must also hold; "any" when only_if is absent.
+      "only_if[$(i)]"
+        string => "$(inventory[services][$(i)][only_if])",
+        if => isvariable("inventory[services][$(i)][only_if]");
+      "only_if[$(i)]"
+        string => "any",
+        if => not(isvariable("inventory[services][$(i)][only_if]"));
+
+      # Service bundles this policy knows how to configure.
+      "known"
+        slist => { "nginx", "postgresql", "node_exporter",
+                   "log_shipper", "backup_agent", "redis" };
+
+  classes:
+      "maintenance"
+        expression => strcmp("true", "$(inventory[maintenance])");
+
+      "has_$(service[$(i)])"
+        expression => "any";
+
+      "run_$(service[$(i)])"
+        expression => "$(only_if[$(i)])";
+
+  methods:
+      "svc_$(known)"
+        usebundle => "svc_$(known)",
+        if => "run_$(known).!maintenance";
+
+  reports:
+    maintenance::
+      "Host is in maintenance; no services configured.";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}

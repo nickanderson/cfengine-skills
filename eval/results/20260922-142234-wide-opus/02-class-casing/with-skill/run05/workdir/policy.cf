@@ -1,0 +1,91 @@
+body common control
+{
+      bundlesequence => { "inventory", "services" };
+}
+
+bundle common inventory
+# @brief Read the inventory export and define normalized service classes.
+#
+# Class names are case-sensitive and cannot be matched case-insensitively,
+# so every service name is forced to lowercase (and canonified) as the
+# class is defined: "Nginx", "nginx" and "NGINX" all define has_nginx.
+{
+  vars:
+      "data" data => readjson("$(this.promise_dirname)/inventory.json");
+      "i" slist => getindices("data[services]");
+
+      # Normalized service name, e.g. "Node-Exporter" -> "node_exporter"
+      "svc[$(i)]"
+        string => canonify(string_downcase("$(data[services][$(i)][name])"));
+
+      # The only_if expression is used as-is; an entry without one always holds.
+      "only_if[$(i)]"
+        string => "$(data[services][$(i)][only_if])",
+        if => isvariable("data[services][$(i)][only_if]");
+      "only_if[$(i)]"
+        string => "any",
+        unless => isvariable("data[services][$(i)][only_if]");
+
+  classes:
+      "inventory_maintenance"
+        expression => regcmp("(?i)true", "$(data[maintenance])");
+
+      "has_$(svc[$(i)])"
+        expression => "any";
+
+      # Parenthesize the data-supplied expression so a top-level | in it
+      # cannot escape the maintenance guard.
+      "run_$(svc[$(i)])"
+        expression => "!inventory_maintenance.($(only_if[$(i)]))";
+}
+
+bundle agent services
+# @brief Run the bundle of every known service the inventory selected.
+{
+  vars:
+      # Only services with a bundle below; anything else in the inventory is
+      # ignored (usebundle on a nonexistent bundle would abort the run).
+      "known" slist => { "nginx", "postgresql", "node_exporter",
+                         "log_shipper", "backup_agent", "redis" };
+
+  methods:
+      "svc_$(known)"
+        usebundle => "svc_$(known)",
+        if => "run_$(known)";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}

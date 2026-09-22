@@ -1,0 +1,23 @@
+bundle agent main
+{
+  methods:
+    "test" usebundle => test_json();
+}
+
+bundle agent test_json
+{
+  vars:
+    "inventory" data => readjson("$(this.promise_dirname)/inventory.json");
+    "svc0" data => "$(inventory.services[0])";
+    "svc0_name" string => "$(svc0.name)";
+
+  classes:
+    "svc0_is_nginx" expression => regcmp("(?i)nginx", "$(svc0_name)");
+
+  reports:
+    "svc0.name: $(svc0_name)";
+    svc0_is_nginx::
+      "Matched nginx";
+    !svc0_is_nginx::
+      "No match";
+}

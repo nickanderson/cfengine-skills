@@ -1,0 +1,14 @@
+bundle agent main
+{
+  vars:
+    "test_name" string => "Nginx";
+
+  classes:
+    "is_nginx" expression => regcmp("(?i)nginx", "$(test_name)");
+
+  reports:
+    is_nginx::
+      "Matched: $(test_name)";
+    !is_nginx::
+      "No match: $(test_name)";
+}

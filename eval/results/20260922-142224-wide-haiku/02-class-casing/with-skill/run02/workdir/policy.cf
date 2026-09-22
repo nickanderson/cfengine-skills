@@ -1,0 +1,91 @@
+body file control
+{
+  inputs => { };
+}
+
+bundle agent __main__
+{
+  methods:
+    any::
+      "configure inventory services" usebundle => inventory_services;
+}
+
+bundle agent inventory_services
+{
+  vars:
+    "inv" data => readjson("$(this.promise_dirname)/inventory.json");
+    "svc_list" slist => getindices("inv[services]");
+    "maint_flag" string => "$(inv[maintenance])";
+
+  classes:
+    # Define has_<normalized_name> for each service in inventory.
+    # Normalize: lowercase + canonify (dashes become underscores).
+    # This matches any casing in the inventory.
+    "has_$(with)" with => string_downcase(canonify("$(inv[services][$(svc_list)][name])")),
+      scope => "namespace";
+
+    # Global maintenance flag
+    "is_maintenance" expression => regcmp("(?i)^true$", "$(maint_flag)");
+
+  methods:
+    # For each service, run its configuration bundle if not in maintenance
+    "configure" usebundle => configure_service("$(svc_list)", "$(inv[services][$(svc_list)][name])", "$(inv[services][$(svc_list)][only_if])"),
+      unless => "is_maintenance";
+}
+
+bundle agent configure_service(svc_index, name, only_if_expr)
+{
+  vars:
+    "svc_name" string => string_downcase(canonify("$(name)"));
+
+  classes:
+    # Evaluate the only_if condition:
+    # - If empty (no only_if specified), always true
+    # - If present, evaluate as a class expression (which references the has_* classes)
+    "can_run" expression => ifelse(
+      strcmp("$(only_if_expr)", ""),
+      "any",
+      "$(only_if_expr)"
+    );
+
+  methods:
+    can_run::
+      "run service" usebundle => "svc_$(svc_name)";
+}
+
+# Service bundles (stubs)
+bundle agent svc_nginx
+{
+  reports:
+    "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+    "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+    "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+    "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+    "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+    "CONFIGURED: svc_redis";
+}

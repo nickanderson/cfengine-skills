@@ -1,0 +1,9 @@
+{
+  "maintenance": false,
+  "services": [
+    { "name": "NGINX" },
+    { "name": "PostgreSQL" },
+    { "name": "log-SHIPPER" },
+    { "name": "BACKUP-AGENT" }
+  ]
+}

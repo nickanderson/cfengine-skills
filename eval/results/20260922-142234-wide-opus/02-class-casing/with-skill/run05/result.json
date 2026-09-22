@@ -1,0 +1,217 @@
+{
+  "variant": "with-skill",
+  "run": 5,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 62937,
+    "duration_api_ms": 60607,
+    "num_turns": 5,
+    "total_cost_usd": 0.2648288,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "358159eaa4652992df4731b313b481d2a82a86976d6e989d9aecb3ce5509c15d",
+  "model_id": "claude-opus-5-5",
+  "models_used": [
+    "claude-opus-5-5"
+  ],
+  "case": "02-class-casing",
+  "case_title": "Service bundles selected from inventory data, regardless of casing",
+  "rubric_version": 3,
+  "artifacts": {
+    "policy_files": [
+      "policy.cf"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "workdir",
+      "augments": "none"
+    },
+    "policy_bytes": 2364
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": true,
+    "standalone": [
+      {
+        "file": "policy.cf",
+        "rc": 0,
+        "output": "",
+        "bundlesequence": null
+      }
+    ],
+    "stdlib_retried": false,
+    "stdlib_ok": null,
+    "stdlib": [],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [],
+    "unknown": [],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [
+      "data[services][$(i)][only_if]"
+    ],
+    "tunables": [],
+    "instrumented": [],
+    "fully_qualified": [],
+    "augments_files": [],
+    "augments_keys": [],
+    "matched_keys": [],
+    "unmatched_tunables": []
+  },
+  "functional": null,
+  "casing": {
+    "ran": true,
+    "status": "ok",
+    "weekday": "Tuesday",
+    "variants": [
+      {
+        "label": "title case, nginx",
+        "rc": 0,
+        "applies": [
+          "svc_log_shipper",
+          "svc_nginx",
+          "svc_node_exporter"
+        ],
+        "missing": [],
+        "unexpected": [],
+        "log": ""
+      },
+      {
+        "label": "lower case, nginx",
+        "rc": 0,
+        "applies": [
+          "svc_log_shipper",
+          "svc_nginx",
+          "svc_node_exporter"
+        ],
+        "missing": [],
+        "unexpected": [],
+        "log": ""
+      },
+      {
+        "label": "upper case, postgresql",
+        "rc": 0,
+        "applies": [
+          "svc_log_shipper",
+          "svc_node_exporter",
+          "svc_postgresql"
+        ],
+        "missing": [],
+        "unexpected": [],
+        "log": ""
+      },
+      {
+        "label": "mixed case, postgresql",
+        "rc": 0,
+        "applies": [
+          "svc_log_shipper",
+          "svc_node_exporter",
+          "svc_postgresql"
+        ],
+        "missing": [],
+        "unexpected": [],
+        "log": ""
+      },
+      {
+        "label": "no nginx or postgresql, so no only_if holds",
+        "rc": 0,
+        "applies": [],
+        "missing": [],
+        "unexpected": [],
+        "log": ""
+      },
+      {
+        "label": "node-exporter absent while its only_if would hold",
+        "rc": 0,
+        "applies": [
+          "svc_nginx",
+          "svc_postgresql"
+        ],
+        "missing": [],
+        "unexpected": [],
+        "log": ""
+      },
+      {
+        "label": "maintenance, with only_if that would hold",
+        "rc": 0,
+        "applies": [],
+        "missing": [],
+        "unexpected": [],
+        "log": ""
+      }
+    ]
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 15,
+      "earned": 15,
+      "detail": "cf-promises -cf clean"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 5,
+      "earned": 5,
+      "detail": "clean (0 referenced)"
+    },
+    {
+      "id": "answers_question",
+      "label": "Says class matching is case-sensitive",
+      "weight": 10,
+      "earned": 10,
+      "detail": "says: \"case-insensitive\""
+    },
+    {
+      "id": "normalizes_case",
+      "label": "Normalizes casing with string_downcase/string_upcase",
+      "weight": 5,
+      "earned": 5,
+      "detail": "string_downcase"
+    },
+    {
+      "id": "prefers_if",
+      "label": "Uses if => rather than deprecated ifvarclass",
+      "weight": 5,
+      "earned": 5,
+      "detail": "0 ifvarclass, 2 if"
+    },
+    {
+      "id": "services_match",
+      "label": "Listed services run across casings (canonify + casing where tested)",
+      "weight": 20,
+      "earned": 20.0,
+      "detail": "7 of 7 data variants"
+    },
+    {
+      "id": "only_if_grouping",
+      "label": "only_if combined with the service class safely (grouping)",
+      "weight": 15,
+      "earned": 15,
+      "detail": "7 of 7 data variants"
+    },
+    {
+      "id": "hard_classes_intact",
+      "label": "Mixed-case hard classes (weekdays) still evaluate",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "7 of 7 data variants, run on Tuesday"
+    },
+    {
+      "id": "negative_control",
+      "label": "Unlisted services never run",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "7 of 7 data variants"
+    }
+  ],
+  "score": 100.0,
+  "max_score": 100
+}

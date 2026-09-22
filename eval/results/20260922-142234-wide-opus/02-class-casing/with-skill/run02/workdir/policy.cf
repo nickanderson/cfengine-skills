@@ -1,0 +1,58 @@
+body common control
+{
+      bundlesequence => { "inventory_classes", "inventory_services" };
+}
+
+bundle common inventory_classes
+# @brief Read the inventory export and define a has_<service> class per entry.
+# Class names are case-sensitive and cannot be matched case-insensitively, so
+# each service name is normalized to lowercase when its class is defined.
+{
+  vars:
+      "inv" data => readjson("$(this.promise_dirname)/inventory.json");
+      "i" slist => getindices("inv[services]");
+
+      # Normalized key per entry: "Node-Exporter" -> "node_exporter"
+      "key[$(i)]" string => canonify(string_downcase("$(inv[services][$(i)][name])"));
+
+      # only_if is a class expression and is used as-is: downcasing it would
+      # break mixed-case hard classes such as Monday. Absent means "any".
+      # (ifelse() can't be used here: an unresolved argument skips the call.)
+      "only_if[$(i)]" string => "any";
+      "only_if[$(i)]"
+        string => "$(inv[services][$(i)][only_if])",
+        if => isvariable("inv[services][$(i)][only_if]");
+
+      # Services this policy has a bundle for
+      "known" slist => { "nginx", "postgresql", "node_exporter",
+                         "log_shipper", "backup_agent", "redis" };
+
+  classes:
+      "has_$(key[$(i)])" expression => "any";
+      "known_$(known)" expression => "any";
+      "inventory_maintenance" expression => strcmp("$(inv[maintenance])", "true");
+}
+
+bundle agent inventory_services
+# @brief Run svc_<service> for each listed, known service whose only_if holds.
+{
+  vars:
+      "i" slist => { @(inventory_classes.i) };
+
+  methods:
+      # Parenthesize the data-supplied expression before combining it.
+      # known_ guard: usebundle on a nonexistent bundle aborts the run.
+      "svc_$(inventory_classes.key[$(i)])"
+        usebundle => "svc_$(inventory_classes.key[$(i)])",
+        if => and("!inventory_maintenance",
+                  canonify("known_$(inventory_classes.key[$(i)])"),
+                  canonify("has_$(inventory_classes.key[$(i)])"),
+                  "($(inventory_classes.only_if[$(i)]))");
+}
+
+bundle agent svc_nginx         { reports: "CONFIGURED: $(this.bundle)"; }
+bundle agent svc_postgresql    { reports: "CONFIGURED: $(this.bundle)"; }
+bundle agent svc_node_exporter { reports: "CONFIGURED: $(this.bundle)"; }
+bundle agent svc_log_shipper   { reports: "CONFIGURED: $(this.bundle)"; }
+bundle agent svc_backup_agent  { reports: "CONFIGURED: $(this.bundle)"; }
+bundle agent svc_redis         { reports: "CONFIGURED: $(this.bundle)"; }

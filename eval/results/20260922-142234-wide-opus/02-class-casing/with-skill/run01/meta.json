@@ -1,0 +1,19 @@
+{
+  "variant": "with-skill",
+  "run": 1,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 53255,
+    "duration_api_ms": 51411,
+    "num_turns": 5,
+    "total_cost_usd": 0.2498032,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "358159eaa4652992df4731b313b481d2a82a86976d6e989d9aecb3ce5509c15d",
+  "model_id": "claude-opus-5-5",
+  "models_used": [
+    "claude-opus-5-5"
+  ]
+}
