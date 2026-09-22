@@ -1,0 +1,24 @@
+{
+  "timestamp": "20260921-181725",
+  "label": "sonnet",
+  "model": "sonnet",
+  "runs_per_arm": 5,
+  "arms": "both",
+  "functional": true,
+  "cfengine": "CFEngine Core 3.27.0",
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "platform": "Linux-x86_64",
+  "harness": {
+    "claude_code": "2.1.278 (Claude Code)",
+    "eval_commit": "uncommitted",
+    "eval_dirty": true
+  },
+  "skill": {
+    "path": "cfengine-policy/SKILL.md",
+    "commit": "63205a7e3ab3326c09a65a0ad178bea16bfe494d",
+    "dirty": true,
+    "sha256": "03358c0bf9c6a76f38bd6bbd8cbc6ea680ba7067191b4ae03e2b596ba0c3d44a",
+    "id": "63205a7e+dirty.03358c0b",
+    "bytes": 12833
+  }
+}

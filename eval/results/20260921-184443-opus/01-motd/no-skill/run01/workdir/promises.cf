@@ -1,0 +1,14 @@
+##############################################################################
+#
+# promises.cf - Policy entry point.
+#
+# def.json, found next to this file, is loaded automatically as the augments
+# file and is where the motd variables are configured.
+#
+##############################################################################
+
+body common control
+{
+      bundlesequence => { "motd" };
+      inputs         => { "motd.cf" };
+}

@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "default:motd_def.header": "*** Welcome to $(sys.host) ***",
+    "default:motd_def.message": "Authorized users only. All activity may be monitored and reported.",
+    "default:motd_def.footer": "Managed by CFEngine - do not edit directly."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "variables": {
+    "default:def.motd_banner": {
+      "value": "Welcome to Example Corp - Authorized Access Only",
+      "comment": "Banner line shown at the top of /etc/motd"
+    },
+    "default:def.motd_notice": {
+      "value": "This system is monitored. All activity may be logged and reviewed.",
+      "comment": "Security/legal notice line shown in /etc/motd"
+    },
+    "default:def.motd_contact": {
+      "value": "Questions? Contact support@example.com",
+      "comment": "Support contact line shown in /etc/motd"
+    }
+  }
+}

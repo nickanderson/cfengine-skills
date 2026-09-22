@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_enabled": "true",
+    "motd_organization": "Example Organization",
+    "motd_support_contact": "support@example.com"
+  }
+}

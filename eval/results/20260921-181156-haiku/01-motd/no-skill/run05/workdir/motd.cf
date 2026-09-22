@@ -1,0 +1,55 @@
+bundle agent manage_motd
+{
+  vars:
+    "motd_enabled"
+      string => "$(def.motd_enabled)",
+      comment => "Enable or disable MOTD management";
+
+    "motd_file_path"
+      string => "$(def.motd_file_path)",
+      comment => "Path to the MOTD file";
+
+    "motd_content"
+      string => "$(def.motd_content)",
+      comment => "Content of the message of the day";
+
+  classes:
+    "motd_enabled_class"
+      expression => strcmp("$(motd_enabled)", "true"),
+      comment => "Define class if MOTD management is enabled";
+
+  files:
+    motd_enabled_class::
+      "$(motd_file_path)"
+        create        => "true",
+        edit_defaults => empty_defaults,
+        edit_line     => insert_motd_content("$(motd_content)"),
+        perms         => mog("644", "root", "root"),
+        comment       => "Manage the message of the day file";
+
+  reports:
+    motd_enabled_class::
+      "MOTD managed at: $(motd_file_path)";
+
+    !motd_enabled_class::
+      "MOTD management is disabled";
+}
+
+bundle edit_line insert_motd_content(content)
+{
+  insert_lines:
+    "$(content)";
+}
+
+body edit_defaults empty_defaults
+{
+  empty_file_before_editing => "true";
+  edit_backup               => "false";
+}
+
+body perms mog(mode, owner, group)
+{
+  mode   => "$(mode)";
+  owners => { "$(owner)" };
+  groups => { "$(group)" };
+}

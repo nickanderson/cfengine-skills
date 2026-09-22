@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_message": "Welcome to ACME Corp.\nThis system is for authorized use only.\nAll activity is monitored and logged.",
+    "motd_file": "/etc/motd",
+    "motd_mode": "644"
+  }
+}

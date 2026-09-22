@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_organization": "Globex",
+    "motd_support_contact": "admin@example.com",
+    "motd_message": "Scheduled maintenance Friday 22:00 UTC. Save your work."
+  }
+}

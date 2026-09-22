@@ -1,0 +1,71 @@
+bundle agent motd
+# @brief Manage the content of the message of the day (motd)
+#
+# Three independent variables drive this policy. Each one can be overridden
+# from augments (def.json) without editing the policy itself:
+#
+#   default:def.motd_path    - full path to the motd file
+#   default:def.motd_banner  - banner (first line) shown to the user
+#   default:def.motd_contact - who to contact about this host
+#
+# @see ./def.json for an example augments file
+{
+  vars:
+
+      # 1) Where the message of the day lives.
+      "path"
+        string => ifelse( isvariable( "def.motd_path" ),
+                          "$(def.motd_path)",
+                          "/etc/motd" ),
+        comment => "Override by defining default:def.motd_path in augments";
+
+      # 2) The banner, the first thing presented to the user.
+      "banner"
+        string => ifelse( isvariable( "def.motd_banner" ),
+                          "$(def.motd_banner)",
+                          "Welcome to $(sys.fqhost)" ),
+        comment => "Override by defining default:def.motd_banner in augments";
+
+      # 3) Who to contact with questions about this host.
+      "contact"
+        string => ifelse( isvariable( "def.motd_contact" ),
+                          "$(def.motd_contact)",
+                          "root@$(sys.fqhost)" ),
+        comment => "Override by defining default:def.motd_contact in augments";
+
+      # The full content, assembled from the three variables above.
+      "content"
+        string => "$(banner)$(const.n)$(const.n)Host:    $(sys.fqhost) ($(sys.ipv4))$(const.n)OS:      $(sys.flavor)$(const.n)Contact: $(contact)$(const.n)",
+        comment => "Rendered once so that the files promise below stays simple
+                    and convergent";
+
+  files:
+
+      "$(path)"
+        create => "true",
+        content => "$(content)",
+        perms => mog( "0644", "root", "root" ),
+        handle => "motd_content",
+        comment => "The message of the day is presented at login. It should
+                    always reflect what policy and augments define, so that
+                    local edits do not persist.";
+
+  reports:
+
+    verbose_mode::
+      "$(this.bundle): managing '$(path)' with banner '$(banner)' and contact '$(contact)'";
+}
+
+bundle agent __main__
+# @brief Entry point when the policy is run directly
+#
+#     cf-agent --no-lock --inform --file ./motd.cf
+{
+  methods:
+      "motd";
+}
+
+body file control
+{
+      inputs => { "$(sys.libdir)/stdlib.cf" };
+}

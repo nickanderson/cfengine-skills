@@ -1,0 +1,14 @@
+###############################################################################
+#
+# promises.cf - Policy entry point
+#
+# Manages the message of the day (/etc/motd). The content is driven by three
+# independent variables, each overridable from augments (def.json).
+#
+###############################################################################
+
+body common control
+{
+      bundlesequence => { "motd" };
+      inputs => { "services/motd.cf" };
+}

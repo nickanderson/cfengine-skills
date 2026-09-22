@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_organization": "Example Corp",
+    "motd_support_contact": "support@example.com",
+    "motd_custom_message": "Please ensure your system is kept up to date with security patches."
+  }
+}

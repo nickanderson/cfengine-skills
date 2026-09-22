@@ -1,0 +1,13 @@
+# Policy entry point for message of the day management.
+#
+# def.json (adjacent to this file) supplies the tunable values.
+
+body common control
+{
+      bundlesequence => { "motd" };
+
+      inputs => {
+                  "$(sys.libdir)/stdlib.cf",   # mog(), results()
+                  "motd.cf",
+                };
+}

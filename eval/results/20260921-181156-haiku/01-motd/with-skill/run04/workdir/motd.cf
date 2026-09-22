@@ -1,0 +1,72 @@
+body common control
+{
+  bundlesequence => { "motd" };
+}
+
+bundle agent motd
+{
+  vars:
+      "enabled"
+        string => ifelse(isvariable("def.motd_enabled"),
+                         "$(def.motd_enabled)",
+                         "true");
+
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                         "$(def.motd_organization)",
+                         "Example Organization");
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                         "$(def.motd_support_contact)",
+                         "support@example.com");
+
+      "content"
+        string => "
+====================================================
+Welcome to $(organization)
+====================================================
+
+System: $(sys.hostname)
+OS: $(sys.os)
+Architecture: $(sys.arch)
+
+For support, contact: $(support_contact)
+
+====================================================
+";
+
+  classes:
+      "motd_enabled" expression => strcmp("$(enabled)", "true");
+
+  files:
+      "/etc/motd"
+        create => "true",
+        perms => mog("0644", "root", "root"),
+        edit_line => insert_motd_content,
+        if => "motd_enabled",
+        comment => "Manage system message of the day";
+
+  reports:
+      "MOTD management enabled for $(organization)"
+        if => "motd_enabled";
+
+      "MOTD management is disabled"
+        if => "!motd_enabled";
+}
+
+body perms mog(mode, owner, group)
+{
+  mode => "$(mode)";
+  owners => { "$(owner)" };
+  groups => { "$(group)" };
+}
+
+bundle edit_line insert_motd_content
+{
+  delete_lines:
+      ".*" comment => "Remove all existing content";
+
+  insert_lines:
+      "$(motd.content)" comment => "Insert new MOTD content";
+}

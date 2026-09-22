@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_enabled": "true",
+    "motd_file_path": "/etc/motd",
+    "motd_content": "Welcome to the system\n\nThis is a managed server. Unauthorized access is prohibited.\nFor support, contact: admin@example.com\n"
+  }
+}

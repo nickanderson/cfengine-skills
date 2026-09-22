@@ -1,0 +1,5 @@
+{
+  "motd_enabled": "true",
+  "motd_file": "/etc/motd",
+  "motd_text": "Welcome to this system\n\nFor support, contact: admin@example.com\nLast updated: 2026-09-21\n"
+}

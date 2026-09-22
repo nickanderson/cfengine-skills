@@ -1,0 +1,148 @@
+{
+  "arm": "no-skill",
+  "run": 2,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 349502,
+    "duration_api_ms": 301109,
+    "num_turns": 24,
+    "total_cost_usd": 0.6021926,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "03358c0bf9c6a76f38bd6bbd8cbc6ea680ba7067191b4ae03e2b596ba0c3d44a",
+  "case": "01-motd",
+  "case_title": "MOTD with 3 augments-tunable variables",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "motd.cf",
+      "promises.cf"
+    ],
+    "augments_files": [
+      "def.json"
+    ],
+    "sources": {
+      "policy": "workdir",
+      "augments": "workdir"
+    },
+    "policy_bytes": 2671
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": true,
+    "standalone": [
+      {
+        "file": "promises.cf",
+        "rc": 0,
+        "output": "",
+        "bundlesequence": null
+      }
+    ],
+    "stdlib_retried": false,
+    "stdlib_ok": null,
+    "stdlib": [],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [
+      "host"
+    ],
+    "unknown": [],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [
+      "motd_def.footer",
+      "motd_def.header",
+      "motd_def.message"
+    ],
+    "tunables": [
+      "motd_def.footer",
+      "motd_def.header",
+      "motd_def.message"
+    ],
+    "instrumented": [],
+    "fully_qualified": [],
+    "augments_files": [
+      "def.json"
+    ],
+    "augments_keys": [
+      "default:motd_def.footer",
+      "default:motd_def.header",
+      "default:motd_def.message"
+    ],
+    "matched_keys": [
+      "default:motd_def.footer",
+      "default:motd_def.header",
+      "default:motd_def.message"
+    ],
+    "unmatched_tunables": []
+  },
+  "functional": {
+    "ran": true,
+    "status": "ok",
+    "overridden": [
+      "footer",
+      "header",
+      "message"
+    ],
+    "not_overridden": [],
+    "log": "default:classic_services.pattern[messagebus] .*dbus-daemon.*                                              source=promise                                                                   \ndefault:def.footer                       CFEVALSENTINEL_footer                                        source=augments_file                                                             \ndefault:def.header                       CFEVALSENTINEL_header                                        source=augments_file                                                             \ndefault:def.message                      CFEVALSENTINEL_message                                       source=augments_file                                                             \ndefault:motd_def.footer                  Managed by CFEngine - do not edit directly.                  source=promise                           Footer line shown at the bottom of the motd.\n                     Configurable via augments as default:motd_def.footer.\ndefault:motd_def.header                  *** Welcome to cfeval ***                                    source=promise                           Header/banner line shown at the top of the motd.\n                     Configurable via augments as default:motd_def.header.\ndefault:motd_def.message                 Authorized users only. All activity may be monitored and reported. source=promise                           Main body text of the motd.\n                     Configurable via augments as default:motd_def.message.\ndefault:motd_def.path                    /etc/motd                                                    source=promise                           Path to the file managed as the message of the day."
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 25,
+      "earned": 25,
+      "detail": "cf-promises -cf clean"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 10,
+      "earned": 10,
+      "detail": "clean (1 referenced)"
+    },
+    {
+      "id": "tunable_count",
+      "label": "3 augments tunables present",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "3 found"
+    },
+    {
+      "id": "isvariable_pattern",
+      "label": "ifelse(isvariable(...)) instrumentation",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 3 tunables wrapped in ifelse()"
+    },
+    {
+      "id": "qualified_refs",
+      "label": "Tunables namespaced consistently",
+      "weight": 10,
+      "earned": 10,
+      "detail": "all bare def."
+    },
+    {
+      "id": "augments_example",
+      "label": "def.json augments example provided",
+      "weight": 10,
+      "earned": 10,
+      "detail": "def.json"
+    },
+    {
+      "id": "augments_keys_match",
+      "label": "def.json keys match policy tunables",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "3 matched"
+    }
+  ],
+  "score": 80.0,
+  "max_score": 100
+}

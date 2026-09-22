@@ -1,0 +1,84 @@
+##############################################################################
+# motd.cf - manage the system's message of the day (/etc/motd by default)
+#
+# Three independent, augments-configurable variables control the content:
+#   motd.motd_message        - the greeting/banner text shown at the top
+#   motd.motd_show_sysinfo   - "true"/"false", whether to append system info
+#   motd.motd_file           - the path of the file to manage
+#
+# All three are declared with policy => "overridable" so that a def.json
+# augments file can override their default values without editing this file.
+##############################################################################
+
+bundle agent motd
+{
+  vars:
+      "motd_message"
+        string => "Welcome to $(sys.host). Authorized users only.",
+        policy => "overridable",
+        comment => "Greeting/banner text placed at the top of the motd file";
+
+      "motd_show_sysinfo"
+        string => "true",
+        policy => "overridable",
+        comment => "'true' to append hostname/OS/kernel info below the greeting, 'false' to omit it";
+
+      "motd_file"
+        string => "/etc/motd",
+        policy => "overridable",
+        comment => "Full path of the file CFEngine manages as the message of the day";
+
+  files:
+      "$(motd_file)"
+        create        => "true",
+        edit_line     => build_motd,
+        edit_defaults => motd_edit_defaults,
+        perms         => motd_perms,
+        classes       => if_repaired("motd_updated");
+
+  reports:
+    motd_updated::
+      "Updated motd content in $(motd_file)";
+}
+
+##############################################################################
+# Builds the actual file content based on motd.motd_message and
+# motd.motd_show_sysinfo. Kept self-contained (reads motd.* vars directly)
+# so it does not depend on cross-bundle class scoping rules.
+##############################################################################
+bundle edit_line build_motd
+{
+  vars:
+      "show_sysinfo" string => "$(motd.motd_show_sysinfo)";
+
+  classes:
+      "do_sysinfo" expression => strcmp("$(show_sysinfo)", "true");
+
+  insert_lines:
+      "$(motd.motd_message)"
+        location => start;
+
+      "System: $(sys.fqhost)  OS: $(sys.os) $(sys.release)  Arch: $(sys.arch)"
+        ifvarclass => "do_sysinfo";
+}
+
+##############################################################################
+# Supporting bodies (kept local so this policy has no external dependencies)
+##############################################################################
+body edit_defaults motd_edit_defaults
+{
+      empty_file_before_editing => "true";
+      max_file_size             => "50000";
+}
+
+body perms motd_perms
+{
+      mode  => "644";
+      owner => "root";
+      group => "root";
+}
+
+body classes if_repaired(x)
+{
+      promise_repaired => { "$(x)" };
+}

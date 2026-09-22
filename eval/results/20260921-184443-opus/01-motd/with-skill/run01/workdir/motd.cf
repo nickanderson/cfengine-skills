@@ -1,0 +1,95 @@
+bundle agent motd
+{
+  meta:
+      "description"
+        string => "Manage the content of the message of the day.";
+
+      "tunables"
+        slist => {
+                   "def.motd_organization",
+                   "def.motd_support_contact",
+                   "def.motd_banner",
+                 };
+
+  vars:
+
+    # The three tunables. Each one is independent and individually overridable
+    # from augments (def.json). The policy falls back to a sane default when the
+    # augments variable is not defined.
+
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                         "$(def.motd_organization)",
+                         "Acme Corp"),
+        comment => "Organization name shown in the motd banner header.";
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                         "$(def.motd_support_contact)",
+                         "support@example.com"),
+        comment => "Where users should go for help with this host.";
+
+      "banner"
+        string => ifelse(isvariable("def.motd_banner"),
+                         "$(def.motd_banner)",
+                         "Authorized use only. All activity may be monitored and recorded."),
+        comment => "Legal/acceptable-use notice shown in the motd.";
+
+    # Implementation details, not tunable.
+
+      "_file"
+        string => "/etc/motd";
+
+      "_group"
+        string => ifelse("freebsd|openbsd|netbsd|darwin", "wheel", "root");
+
+    # Only the values the template needs, so the implicit (and expensive)
+    # datastate() is not used to render the template.
+
+      "_template_data"
+        data => parsejson('{
+                             "organization": "$(organization)",
+                             "support_contact": "$(support_contact)",
+                             "banner": "$(banner)",
+                             "fqhost": "$(sys.fqhost)",
+                             "platform": "$(sys.flavour)"
+                           }');
+
+      "_template"
+        string => concat(
+                    "################################################################$(const.n)",
+                    "  {{{organization}}}$(const.n)",
+                    "################################################################$(const.n)",
+                    "$(const.n)",
+                    "  {{{banner}}}$(const.n)",
+                    "$(const.n)",
+                    "  Host     : {{{fqhost}}}$(const.n)",
+                    "  Platform : {{{platform}}}$(const.n)",
+                    "  Support  : {{{support_contact}}}$(const.n)",
+                    "$(const.n)",
+                    "################################################################$(const.n)");
+
+  files:
+
+      "$(_file)"
+        create => "true",
+        perms => mog("0644", "root", "$(_group)"),
+        template_method => "inline_mustache",
+        edit_template_string => "$(_template)",
+        template_data => @(_template_data),
+        classes => results("bundle", "_motd"),
+        comment => "Render the message of the day from the tunable values.";
+
+  reports:
+
+    _motd_repaired::
+      "Updated '$(_file)' for organization '$(organization)'";
+
+    _motd_not_kept|_motd_failed::
+      "Failed to update '$(_file)'";
+
+    DEBUG|DEBUG_motd::
+      "DEBUG $(this.bundle): organization    = '$(organization)'";
+      "DEBUG $(this.bundle): support_contact = '$(support_contact)'";
+      "DEBUG $(this.bundle): banner          = '$(banner)'";
+}

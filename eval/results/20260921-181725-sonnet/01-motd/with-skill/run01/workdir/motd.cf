@@ -1,0 +1,54 @@
+bundle agent motd
+# @brief Manage the system message of the day (/etc/motd)
+#
+# Provides three independent, augments-tunable variables that control the
+# rendered content:
+#   - motd_organization    (def.json: vars.motd_organization)
+#   - motd_support_contact (def.json: vars.motd_support_contact)
+#   - motd_message         (def.json: vars.motd_message)
+{
+  vars:
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                          "$(def.motd_organization)",
+                          "Example Corp"),
+        comment => "Organization name shown in the MOTD banner. Tunable via augments (def.json vars.motd_organization)";
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                          "$(def.motd_support_contact)",
+                          "support@example.com"),
+        comment => "Support contact shown in the MOTD footer. Tunable via augments (def.json vars.motd_support_contact)";
+
+      "message"
+        string => ifelse(isvariable("def.motd_message"),
+                          "$(def.motd_message)",
+                          "Authorized users only. All activity may be monitored and reported."),
+        comment => "Warning/banner body text. Tunable via augments (def.json vars.motd_message)";
+
+      "template_data"
+        data => parsejson('{
+          "organization": "$(organization)",
+          "support_contact": "$(support_contact)",
+          "message": "$(message)",
+          "hostname": "$(sys.fqhost)"
+        }');
+
+      "template"
+        string => "{{organization}} -- {{hostname}}$(const.n)$(const.n){{message}}$(const.n)$(const.n)Support: {{support_contact}}$(const.n)";
+
+  files:
+      "/etc/motd"
+        create               => "true",
+        edit_template_string => "$(template)",
+        template_method      => "inline_mustache",
+        template_data        => @(template_data),
+        perms                => motd_perms("644", "root", "root");
+}
+
+body perms motd_perms(mode, user, group)
+{
+    mode   => "$(mode)";
+    owners => { "$(user)" };
+    groups => { "$(group)" };
+}

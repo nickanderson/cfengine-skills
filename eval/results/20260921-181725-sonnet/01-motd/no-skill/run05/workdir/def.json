@@ -1,0 +1,16 @@
+{
+    "variables": {
+        "default:motd.motd_message": {
+            "value": "Welcome to ACME Corp - authorized access only. All activity is monitored.",
+            "comment": "Overrides the default greeting shown at the top of /etc/motd"
+        },
+        "default:motd.motd_show_sysinfo": {
+            "value": "true",
+            "comment": "Set to false to hide the hostname/OS/kernel info line"
+        },
+        "default:motd.motd_file": {
+            "value": "/etc/motd",
+            "comment": "Change if this platform uses a different motd path, e.g. /etc/motd.tail"
+        }
+    }
+}

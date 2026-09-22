@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_title": "System Access Notice",
+    "motd_body": "This is a production system. All activities are logged and monitored. Unauthorized access attempts will be prosecuted to the fullest extent of the law.",
+    "motd_footer": "For issues, contact: admin@example.com | Last updated: 2026-09-21"
+  }
+}

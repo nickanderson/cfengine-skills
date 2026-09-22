@@ -1,0 +1,19 @@
+{
+  "variables": {
+    "motd_organization": {
+      "value": "Northern.tech",
+      "comment": "Tunable 1: organization name rendered in the motd header",
+      "tags": [ "motd" ]
+    },
+    "motd_support_contact": {
+      "value": "admin@example.com or x4357",
+      "comment": "Tunable 2: where users should go for help",
+      "tags": [ "motd" ]
+    },
+    "motd_banner": {
+      "value": "This system is for authorized use only. All activity may be monitored and recorded.",
+      "comment": "Tunable 3: access/authorization notice body",
+      "tags": [ "motd" ]
+    }
+  }
+}

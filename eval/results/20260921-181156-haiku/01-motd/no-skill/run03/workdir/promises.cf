@@ -1,0 +1,10 @@
+body file control
+{
+  inputs => { "motd.cf" };
+}
+
+bundle agent main
+{
+  methods:
+    "manage_motd" usebundle => manage_motd();
+}

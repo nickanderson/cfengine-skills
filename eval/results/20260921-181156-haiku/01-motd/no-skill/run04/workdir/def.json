@@ -1,0 +1,10 @@
+{
+  "classes": {
+    "motd_enabled": ["any"]
+  },
+  "vars": {
+    "motd_enabled": "true",
+    "motd_content": "===============================================\nWelcome to the System\n===============================================\n\nThis is a managed system. All activity is monitored.\nUnauthorized access is prohibited and will be\nprosecuted by law.\n\n===============================================",
+    "motd_file_path": "/etc/motd"
+  }
+}

@@ -1,0 +1,18 @@
+# Standalone driver so the policy can be tested with:
+#
+#   cf-agent -KIf ./promises.cf
+#
+# def.json in this directory is loaded automatically as augments.
+# When adding motd.cf to masterfiles instead, drop this file, list
+# motd.cf in your inputs and add 'motd' to your bundlesequence -
+# stdlib is already loaded there.
+
+body file control
+{
+      inputs => { "$(sys.libdir)/stdlib.cf", "motd.cf" };
+}
+
+body common control
+{
+      bundlesequence => { "motd" };
+}

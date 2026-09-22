@@ -1,0 +1,16 @@
+{
+  "variables": {
+    "default:motd.message": {
+      "value": "Authorized access only. All activity is monitored and logged.",
+      "comment": "Overrides motd.message"
+    },
+    "default:motd.path": {
+      "value": "/etc/motd",
+      "comment": "Overrides motd.path"
+    },
+    "default:motd.permissions": {
+      "value": "644",
+      "comment": "Overrides motd.permissions"
+    }
+  }
+}

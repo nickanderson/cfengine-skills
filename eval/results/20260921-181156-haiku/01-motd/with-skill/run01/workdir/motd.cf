@@ -1,0 +1,42 @@
+bundle agent motd
+{
+  vars:
+      "enabled"
+        string => ifelse(isvariable("def.motd_enabled"),
+                         "$(def.motd_enabled)",
+                         "true");
+
+      "file_path"
+        string => ifelse(isvariable("def.motd_file_path"),
+                         "$(def.motd_file_path)",
+                         "/etc/motd");
+
+      "content"
+        string => ifelse(isvariable("def.motd_content"),
+                         "$(def.motd_content)",
+                         "Welcome to this system.$(const.n)");
+
+  classes:
+      "motd_enabled" expression => strcmp("$(enabled)", "true");
+
+  files:
+      "$(file_path)"
+        content => "$(content)",
+        if => "motd_enabled",
+        create => "true",
+        perms => system_perms;
+
+  reports:
+      "MOTD disabled in policy configuration"
+        if => "!motd_enabled";
+
+      "MOTD enabled: $(file_path)"
+        if => "motd_enabled";
+}
+
+body perms system_perms
+{
+  mode => "0644";
+  owners => { "root" };
+  groups => { "root" };
+}

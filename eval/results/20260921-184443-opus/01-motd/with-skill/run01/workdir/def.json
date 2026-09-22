@@ -1,0 +1,19 @@
+{
+  "variables": {
+    "motd_organization": {
+      "value": "Northern.tech",
+      "comment": "Organization name shown in the message of the day header.",
+      "tags": [ "motd" ]
+    },
+    "motd_support_contact": {
+      "value": "admin@example.com or x5555",
+      "comment": "Where users of this host should go for help.",
+      "tags": [ "motd" ]
+    },
+    "motd_banner": {
+      "value": "Authorized use only. All activity may be monitored and recorded.",
+      "comment": "Legal/acceptable-use notice shown in the message of the day.",
+      "tags": [ "motd" ]
+    }
+  }
+}

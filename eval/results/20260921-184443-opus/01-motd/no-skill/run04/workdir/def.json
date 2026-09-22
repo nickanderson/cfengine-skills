@@ -1,0 +1,7 @@
+{
+  "variables": {
+    "motd_banner":      "*** Northern.tech managed system ***",
+    "motd_environment": "production",
+    "motd_contact":     "admin@example.com"
+  }
+}

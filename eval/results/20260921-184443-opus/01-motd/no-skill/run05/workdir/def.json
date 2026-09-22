@@ -1,0 +1,7 @@
+{
+  "variables": {
+    "motd_banner": "Welcome to $(sys.fqhost) - production web tier",
+    "motd_warning": "Authorized use only. All activity is logged and reviewed.",
+    "motd_contact": "ops@example.com"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_organization": "Globex Corporation",
+    "motd_support_contact": "admin@example.com",
+    "motd_message": "Welcome. This system is for authorized use only."
+  }
+}

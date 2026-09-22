@@ -1,0 +1,52 @@
+body common control
+{
+  bundlesequence => { "motd" };
+}
+
+bundle agent motd
+{
+  vars:
+      # Tunable via augments -- policy reads from def, falls back to default
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                         "$(def.motd_organization)",
+                         "Example Organization");
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                         "$(def.motd_support_contact)",
+                         "support@example.com");
+
+      "environment_label"
+        string => ifelse(isvariable("def.motd_environment_label"),
+                         "$(def.motd_environment_label)",
+                         "production");
+
+      # Construct the motd content using the configurable variables
+      "content"
+        string => "$(const.n)========================================================================$(const.n)Welcome to $(organization)$(const.n)Environment: $(environment_label)$(const.n)For support, contact: $(support_contact)$(const.n)========================================================================$(const.n)$(const.n)";
+
+  files:
+      "/etc/motd"
+        create => "true",
+        edit_line => motd_content("motd.content"),
+        perms => m("0644");
+
+  reports:
+      "$(sys.date) [INFO] MOTD policy executed"
+        meta => { "test_pass_marker" };
+}
+
+body perms m(mode)
+{
+  mode => "$(mode)";
+}
+
+bundle edit_line motd_content(content_var)
+{
+  delete_lines:
+      ".*";
+
+  insert_lines:
+      "$($(content_var))";
+}

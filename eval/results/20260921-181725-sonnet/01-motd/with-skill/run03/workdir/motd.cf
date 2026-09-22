@@ -1,0 +1,40 @@
+bundle agent motd
+# @brief Manage the system's message of the day (/etc/motd)
+{
+  vars:
+      # Tunable via augments -- policy reads from def, falls back to default
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                          "$(def.motd_organization)",
+                          "Example Corp"),
+        comment => "Organization name shown in the message of the day";
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                          "$(def.motd_support_contact)",
+                          "support@example.org"),
+        comment => "Support contact address shown in the message of the day";
+
+      "banner_message"
+        string => ifelse(isvariable("def.motd_banner_message"),
+                          "$(def.motd_banner_message)",
+                          "Authorized users only. All activity may be monitored and reported."),
+        comment => "Warning/banner text shown in the message of the day";
+
+      "content"
+        string => "$(banner_message)$(const.n)$(const.n)Managed by $(organization) -- contact $(support_contact) for assistance.$(const.n)",
+        comment => "Assembled content for /etc/motd";
+
+  files:
+      "/etc/motd"
+        create        => "true",
+        content       => "$(content)",
+        perms         => motd_perms;
+}
+
+body perms motd_perms
+{
+      mode    => "644";
+      owners  => { "root" };
+      groups  => { "root" };
+}

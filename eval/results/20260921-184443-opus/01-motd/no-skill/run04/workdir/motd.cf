@@ -1,0 +1,106 @@
+bundle agent motd
+# @brief Manage the content of the message of the day (/etc/motd)
+#
+# Three independent variables drive the rendered content. Each one can be
+# overridden from augments (def.json) without editing this policy:
+#
+#   default:def.motd_banner       - greeting shown at the top
+#   default:def.motd_environment  - environment/classification label
+#   default:def.motd_contact      - who to contact about this host
+#
+# Example def.json:
+#
+#   {
+#     "variables": {
+#       "motd_banner":      "*** ACME Production Host ***",
+#       "motd_environment": "production",
+#       "motd_contact":     "ops@example.com"
+#     }
+#   }
+#
+# When a variable is not supplied by augments the policy falls back to a
+# sensible default, so the policy is useful with no augments at all.
+{
+  vars:
+
+      # --- The three independent, augments-configurable variables ----------
+
+    motd_banner_from_augments::
+      "banner"      string => "$(default:def.motd_banner)",
+                    comment => "Greeting line, supplied by augments";
+
+    !motd_banner_from_augments::
+      "banner"      string => "Welcome to $(sys.fqhost)",
+                    comment => "Greeting line, policy default";
+
+    motd_environment_from_augments::
+      "environment" string => "$(default:def.motd_environment)",
+                    comment => "Environment label, supplied by augments";
+
+    !motd_environment_from_augments::
+      "environment" string => "unclassified",
+                    comment => "Environment label, policy default";
+
+    motd_contact_from_augments::
+      "contact"     string => "$(default:def.motd_contact)",
+                    comment => "Point of contact, supplied by augments";
+
+    !motd_contact_from_augments::
+      "contact"     string => "root@$(sys.fqhost)",
+                    comment => "Point of contact, policy default";
+
+      # --- Rendering -------------------------------------------------------
+
+    any::
+      "path"
+        string  => "/etc/motd",
+        comment => "Location of the message of the day";
+
+      "lines"
+        slist   => {
+                     "$(banner)",
+                     "",
+                     "  Host:        $(sys.fqhost)",
+                     "  Environment: $(environment)",
+                     "  Contact:     $(contact)",
+                     "",
+                     "  This system is managed by CFEngine.",
+                     "  Local modifications to $(path) will be reverted.",
+                   },
+        comment => "The message of the day, one list entry per rendered line";
+
+      "content"
+        string  => format( "%s%s", join( "$(const.n)", "lines" ), "$(const.n)" ),
+        comment => "Rendered message of the day, newline terminated";
+
+  classes:
+
+      "motd_banner_from_augments"
+        expression => isvariable( "default:def.motd_banner" ),
+        scope      => "bundle",
+        comment    => "True when augments supplies the banner";
+
+      "motd_environment_from_augments"
+        expression => isvariable( "default:def.motd_environment" ),
+        scope      => "bundle",
+        comment    => "True when augments supplies the environment label";
+
+      "motd_contact_from_augments"
+        expression => isvariable( "default:def.motd_contact" ),
+        scope      => "bundle",
+        comment    => "True when augments supplies the contact";
+
+  files:
+
+      "$(path)"
+        create  => "true",
+        content => "$(content)",
+        perms   => mog( "0644", "root", "root" ),
+        comment => "Keep the message of the day consistent with policy",
+        handle  => "motd_files_content";
+
+  reports:
+
+    verbose_mode::
+      "Rendering $(path) with banner='$(banner)' environment='$(environment)' contact='$(contact)'";
+}

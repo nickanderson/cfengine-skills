@@ -1,0 +1,75 @@
+##############################################################################
+#
+# motd.cf - CFEngine policy to manage message of the day
+#
+# This policy manages /etc/motd using three configurable variables that can
+# be customized via augments (def.json)
+#
+##############################################################################
+
+bundle agent motd_management
+{
+  vars:
+    # Variable 1: MOTD title/header line
+    "motd_title"
+      string => ifelse(isvariable("def.motd_title"),
+                      "$(def.motd_title)",
+                      "Welcome to $(sys.hostname)"),
+      policy => "free";
+
+    # Variable 2: MOTD main message/body
+    "motd_body"
+      string => ifelse(isvariable("def.motd_body"),
+                      "$(def.motd_body)",
+                      "This is a managed system. Unauthorized access is prohibited."),
+      policy => "free";
+
+    # Variable 3: MOTD footer/contact information
+    "motd_footer"
+      string => ifelse(isvariable("def.motd_footer"),
+                      "$(def.motd_footer)",
+                      "For support, contact your system administrator."),
+      policy => "free";
+
+    # Construct the complete MOTD content from the three variables
+    "motd_content"
+      string => "$(motd_title)
+$(motd_body)
+$(motd_footer)
+",
+      policy => "free";
+
+  files:
+    "/etc/motd"
+      content => "$(motd_content)",
+      create => "true",
+      perms => mog("644", "root", "root"),
+      edit_defaults => std_defs;
+
+  reports:
+    verbose::
+      "MOTD Policy: Managing /etc/motd with the following configuration:"
+        comment => "Display policy configuration in verbose mode";
+      "  Title: $(motd_title)"
+        comment => "Show configured title";
+      "  Body: $(motd_body)"
+        comment => "Show configured message body";
+      "  Footer: $(motd_footer)"
+        comment => "Show configured footer";
+}
+
+##############################################################################
+# Main bundle to invoke MOTD management
+##############################################################################
+
+body file control
+{
+  namespace => "cfengine_core";
+}
+
+bundle agent main
+{
+  methods:
+    "Run MOTD Management"
+      usebundle => motd_management;
+}

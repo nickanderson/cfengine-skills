@@ -1,0 +1,62 @@
+bundle agent motd
+# @brief Manage the system message of the day (/etc/motd)
+#
+# Three tunables control the content and are configurable via augments
+# (def.json), falling back to sane defaults when not set:
+#   - def.motd_organization    organization name displayed in the banner
+#   - def.motd_notice          legal/security notice text
+#   - def.motd_support_contact contact info for support/help
+{
+  vars:
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                          "$(def.motd_organization)",
+                          "Example Corp"),
+        comment => "Organization name shown in the message of the day. Configurable via augments (def.json key: motd_organization)";
+
+      "notice"
+        string => ifelse(isvariable("def.motd_notice"),
+                          "$(def.motd_notice)",
+                          "Authorized users only. All activity may be monitored and reported."),
+        comment => "Notice/warning text shown in the message of the day. Configurable via augments (def.json key: motd_notice)";
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                          "$(def.motd_support_contact)",
+                          "support@example.com"),
+        comment => "Support contact shown in the message of the day. Configurable via augments (def.json key: motd_support_contact)";
+
+      "_content_template"
+        string => "{{organization}}
+
+{{notice}}
+
+Host: {{hostname}} ({{os}})
+Support: {{support_contact}}
+",
+        comment => "Mustache template for /etc/motd content";
+
+      "_template_data"
+        data => parsejson('{
+          "organization": "$(organization)",
+          "notice": "$(notice)",
+          "support_contact": "$(support_contact)",
+          "hostname": "$(sys.fqhost)",
+          "os": "$(sys.flavor)"
+        }'),
+        comment => "Data container passed to the mustache template, built from the tunables plus host facts";
+
+  files:
+      "/etc/motd"
+        create               => "true",
+        perms                => mo("644"),
+        edit_template_string => "$(motd._content_template)",
+        template_method      => "inline_mustache",
+        template_data        => @(motd._template_data);
+}
+
+body perms mo(mode)
+{
+      mode   => "$(mode)";
+      owners => { "root" };
+}

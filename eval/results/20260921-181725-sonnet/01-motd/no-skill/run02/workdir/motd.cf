@@ -1,0 +1,81 @@
+bundle common motd_def
+# @brief Fallback values for the three motd content variables. Each is
+# only set here if not already provided by site policy via augments
+# (def.json); otherwise the augmented value takes precedence:
+#
+#   { "vars": { "default:motd_def.header": "..." } }
+{
+  vars:
+      "path"
+        string => "/etc/motd",
+        comment => "Path to the file managed as the message of the day.";
+
+      "header"
+        string => "*** Welcome to $(sys.host) ***",
+        unless => isvariable("motd_def.header"),
+        comment => "Header/banner line shown at the top of the motd.
+                     Configurable via augments as default:motd_def.header.";
+
+      "message"
+        string => "Authorized users only. All activity may be monitored and reported.",
+        unless => isvariable("motd_def.message"),
+        comment => "Main body text of the motd.
+                     Configurable via augments as default:motd_def.message.";
+
+      "footer"
+        string => "Managed by CFEngine - do not edit directly.",
+        unless => isvariable("motd_def.footer"),
+        comment => "Footer line shown at the bottom of the motd.
+                     Configurable via augments as default:motd_def.footer.";
+}
+
+bundle agent motd
+# @brief Assemble motd_def's header, message and footer into
+# $(motd_def.path) and keep it in that exact state.
+{
+  vars:
+      "content"
+        slist => { "$(motd_def.header)", "$(motd_def.message)", "$(motd_def.footer)" },
+        comment => "Ordered lines written to $(motd_def.path), assembled
+                     from the three independent motd_def variables.";
+
+  files:
+      "$(motd_def.path)"
+        create        => "true",
+        edit_line     => motd_set_lines(@(content)),
+        edit_defaults => motd_empty_before_edit,
+        perms         => motd_perms("644", "root", "root"),
+        classes       => motd_if_repaired("motd_updated");
+
+  reports:
+    motd_updated.(inform_mode|verbose_mode)::
+      "Updated $(motd_def.path) with the current motd content";
+}
+
+bundle edit_line motd_set_lines(lines)
+# @brief Replace the file content with exactly the given lines, in order.
+{
+  vars:
+      "want" slist => { @(lines) };
+
+  insert_lines:
+      "$(want)"
+        insert_type => "preserve_all_lines";
+}
+
+body edit_defaults motd_empty_before_edit
+{
+      empty_file_before_editing => "true";
+}
+
+body perms motd_perms(mode, owner, group)
+{
+      mode   => "$(mode)";
+      owners => { "$(owner)" };
+      groups => { "$(group)" };
+}
+
+body classes motd_if_repaired(x)
+{
+      promise_repaired => { "$(x)" };
+}

@@ -1,0 +1,25 @@
+bundle agent manage_motd
+{
+  meta:
+    "description" string => "Manage system message of the day";
+    "version" string => "1.0";
+
+  classes:
+    "motd_enabled"
+      expression => strcmp("${def.motd_enabled}", "true"),
+      comment => "Check if MOTD management is enabled";
+
+  files:
+    motd_enabled::
+      "${def.motd_path}"
+        create => "true",
+        content => "${def.motd_content}",
+        perms => mog("${def.motd_perms}", "root", "root"),
+        comment => "Manage message of the day file";
+
+  reports:
+    motd_enabled.DEBUG::
+      "MOTD Management - Enabled: ${def.motd_enabled}";
+      "MOTD Management - Path: ${def.motd_path}";
+      "MOTD Management - Permissions: ${def.motd_perms}";
+}

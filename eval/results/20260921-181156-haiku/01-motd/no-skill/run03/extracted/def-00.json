@@ -1,0 +1,11 @@
+{
+  "classes": {
+    "enterprise_enabled": [ "default:enabled" ]
+  },
+  "vars": {
+    "motd_enabled": "true",
+    "motd_path": "/etc/motd",
+    "motd_content": "Welcome to the system!\n\nThis is a managed system monitored by CFEngine.\nUnauthorized access is prohibited.\n\nFor support, contact: admin@example.com\n",
+    "motd_perms": "0644"
+  }
+}

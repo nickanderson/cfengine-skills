@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_organization": "Example Corp",
+    "motd_support_contact": "support@example.com",
+    "motd_notice": "This system is for authorized use only. All activity may be monitored and reported."
+  }
+}

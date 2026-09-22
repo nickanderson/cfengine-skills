@@ -1,0 +1,7 @@
+{
+  "variables": {
+    "motd_banner": "*** ACME Corp - Production ***",
+    "motd_message": "Authorized use only. All activity on this system is logged and monitored.\n\nScheduled maintenance window: Sundays 02:00-04:00 UTC.",
+    "motd_contact": "ops@example.com"
+  }
+}

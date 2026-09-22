@@ -1,0 +1,140 @@
+##############################################################################
+#
+# motd.cf - Manage the content of the message of the day.
+#
+# Three independent variables drive the content of the file. Each one has a
+# sane default in this policy and each one can be overridden individually
+# from an augments file (def.json):
+#
+#   def.motd_banner   - headline shown at the top of the file
+#   def.motd_contact  - who to contact about this host
+#   def.motd_warning  - access / authorized use notice
+#
+# Overriding one of them does not require setting the other two.
+#
+##############################################################################
+
+bundle agent motd
+{
+  meta:
+      "description"
+        string => "Manage the content of the message of the day (/etc/motd)";
+
+      "tags" slist => { "motd", "banner", "login" };
+
+  classes:
+
+      # Did the augments file (def.json) provide a value for each variable?
+
+      "motd_have_banner"  expression => isvariable("def.motd_banner");
+      "motd_have_contact" expression => isvariable("def.motd_contact");
+      "motd_have_warning" expression => isvariable("def.motd_warning");
+
+  vars:
+
+      "file" string => "/etc/motd";
+
+      #
+      # Variable 1 of 3: banner
+      #
+    motd_have_banner::
+      "banner" string => "$(def.motd_banner)";
+    !motd_have_banner::
+      "banner" string => "Welcome to $(sys.fqhost)";
+
+      #
+      # Variable 2 of 3: contact
+      #
+    motd_have_contact::
+      "contact" string => "$(def.motd_contact)";
+    !motd_have_contact::
+      "contact" string => "root@$(sys.fqhost)";
+
+      #
+      # Variable 3 of 3: warning
+      #
+    motd_have_warning::
+      "warning" string => "$(def.motd_warning)";
+    !motd_have_warning::
+      "warning"
+        string => "Authorized use only. All activity may be monitored and reported.";
+
+    any::
+
+      # Data passed to the inline mustache template below.
+
+      "data"
+        data => mergedata('{
+                             "banner":   "$(banner)",
+                             "contact":  "$(contact)",
+                             "warning":  "$(warning)",
+                             "fqhost":   "$(sys.fqhost)",
+                             "ipv4":     "$(sys.ipv4)",
+                             "flavor":   "$(sys.flavor)",
+                             "arch":     "$(sys.arch)"
+                           }');
+
+      "template"
+        string =>
+"##############################################################################
+ {{{banner}}}
+##############################################################################
+
+ Host     : {{{fqhost}}} ({{{ipv4}}})
+ Platform : {{{flavor}}} {{{arch}}}
+ Contact  : {{{contact}}}
+
+ {{{warning}}}
+
+ This file is managed by CFEngine. Local edits are reverted.
+##############################################################################
+";
+
+  files:
+
+      "$(file)"
+        create                => "true",
+        perms                 => motd_mog("0644", "root", "root"),
+        template_method       => "inline_mustache",
+        template_data         => @(data),
+        edit_template_string  => "$(template)",
+        classes               => motd_results("motd_file"),
+        comment               => "The message of the day greets and informs
+                                  anyone logging in to this host, so its
+                                  content must be accurate and consistent.";
+
+  reports:
+
+    motd_file_repaired::
+      "$(this.bundle): updated content of $(file)";
+
+    motd_file_failed::
+      "$(this.bundle): FAILED to update content of $(file)";
+
+    (DEBUG|DEBUG_motd).!motd_file_failed::
+      "$(this.bundle): file    = $(file)";
+      "$(this.bundle): banner  = $(banner)";
+      "$(this.bundle): contact = $(contact)";
+      "$(this.bundle): warning = $(warning)";
+}
+
+##############################################################################
+# Bodies are namespaced with a motd_ prefix so that this policy file is
+# self-contained and can not collide with the standard library.
+##############################################################################
+
+body perms motd_mog(mode, owner, group)
+{
+      mode   => "$(mode)";
+      owners => { "$(owner)" };
+      groups => { "$(group)" };
+      rxdirs => "false";
+}
+
+body classes motd_results(class_prefix)
+{
+      scope            => "namespace";
+      promise_kept     => { "$(class_prefix)_kept" };
+      promise_repaired => { "$(class_prefix)_repaired" };
+      repair_failed    => { "$(class_prefix)_failed" };
+}

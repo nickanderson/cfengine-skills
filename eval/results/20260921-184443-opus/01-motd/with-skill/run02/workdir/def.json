@@ -1,0 +1,19 @@
+{
+  "variables": {
+    "motd_organization": {
+      "value": "Northern.tech",
+      "comment": "Organization name rendered in the MOTD banner",
+      "tags": [ "motd" ]
+    },
+    "motd_support_contact": {
+      "value": "admin@example.com (+47 000 00 000)",
+      "comment": "Where users should go for help with this host",
+      "tags": [ "motd" ]
+    },
+    "motd_message": {
+      "value": "Authorized use only. All activity may be monitored and recorded.",
+      "comment": "Free-form MOTD body; set to \"\" to omit the block entirely",
+      "tags": [ "motd" ]
+    }
+  }
+}

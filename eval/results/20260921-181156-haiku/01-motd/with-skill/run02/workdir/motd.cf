@@ -1,0 +1,49 @@
+body common control
+{
+  bundlesequence => { "motd" };
+}
+
+bundle agent motd
+{
+  vars:
+      # Tunable via augments -- policy reads from def, falls back to defaults
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                         "$(def.motd_organization)",
+                         "Example Corp");
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                         "$(def.motd_support_contact)",
+                         "support@example.com");
+
+      "custom_message"
+        string => ifelse(isvariable("def.motd_custom_message"),
+                         "$(def.motd_custom_message)",
+                         "");
+
+      "motd_content"
+        string => format("
+================================================================================
+Welcome to %(org)s
+
+Organization: %(org)s
+Support Contact: %(contact)s
+Custom Message: %(message)s
+================================================================================
+",
+          "org", "$(organization)",
+          "contact", "$(support_contact)",
+          "message", "$(custom_message)");
+
+  files:
+      "/etc/motd"
+        content => "$(motd_content)",
+        perms => default_motd_perms,
+        comment => "Manage message of the day with configurable content";
+}
+
+body perms default_motd_perms
+{
+  mode => "644";
+}

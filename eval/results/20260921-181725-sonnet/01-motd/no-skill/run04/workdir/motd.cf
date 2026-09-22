@@ -1,0 +1,67 @@
+bundle agent motd
+# @brief Manage the system's message of the day (/etc/motd by default)
+#
+# Three independent variables control the managed content. Each has an
+# in-policy default and can be overridden per-host or per-group without
+# editing this file by defining the following in augments data (def.json):
+#
+#   default:motd.message      - the text written to the motd file
+#   default:motd.path         - the file managed as the motd
+#   default:motd.permissions  - octal file mode applied to the motd file
+#
+# Example def.json:
+# {
+#   "variables": {
+#     "default:motd.message": { "value": "Authorized use only." },
+#     "default:motd.path": { "value": "/etc/motd" },
+#     "default:motd.permissions": { "value": "644" }
+#   }
+# }
+{
+  meta:
+      "tags" slist => { "autorun" };
+
+  vars:
+      "message"
+        string => "Welcome to $(sys.fqhost) - managed by CFEngine.",
+        comment => "MOTD message text. Override via augments as default:motd.message.";
+
+      "path"
+        string => "/etc/motd",
+        comment => "Path to the managed motd file. Override via augments as default:motd.path.";
+
+      "permissions"
+        string => "644",
+        comment => "Octal mode applied to the motd file. Override via augments as default:motd.permissions.";
+
+  files:
+      "$(motd.path)"
+        create        => "true",
+        perms         => motd_perms("$(motd.permissions)"),
+        edit_line     => motd_set_content("$(motd.message)"),
+        edit_defaults => motd_empty_before_edit,
+        comment       => "Ensure the motd file exists with the configured content and permissions";
+}
+
+bundle edit_line motd_set_content(message)
+# @brief Replace the file contents with a single managed line
+{
+  insert_lines:
+      "$(message)"
+        comment => "Insert the configured MOTD message";
+}
+
+body edit_defaults motd_empty_before_edit
+# @brief Discard prior content so the file exactly matches the policy
+{
+      empty_file_before_editing => "true";
+      edit_backup               => "false";
+}
+
+body perms motd_perms(mode)
+# @brief Owner/group root, mode taken from the motd_permissions variable
+{
+      mode   => "$(mode)";
+      owners => { "root" };
+      groups => { "root" };
+}

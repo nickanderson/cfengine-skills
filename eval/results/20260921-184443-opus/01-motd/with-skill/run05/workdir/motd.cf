@@ -1,0 +1,118 @@
+bundle agent motd
+# @brief Manage the content of the message of the day (/etc/motd)
+#
+# Three independent settings drive the rendered content. Each one is tunable
+# via augments (def.json) and falls back to a policy default when the augments
+# variable is not defined:
+#
+#   def.motd_organization    - organization name shown in the banner
+#   def.motd_support_contact - who to contact for help
+#   def.motd_policy_notice   - acceptable use / legal notice text
+{
+  vars:
+
+      # --- Tunable 1: organization name -------------------------------------
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                         "$(def.motd_organization)",
+                         "Example Organization"),
+        comment => "Organization name rendered in the motd banner";
+
+      # --- Tunable 2: support contact ---------------------------------------
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                         "$(def.motd_support_contact)",
+                         "support@example.com"),
+        comment => "Contact address rendered in the motd. Empty string omits the line";
+
+      # --- Tunable 3: policy/legal notice -----------------------------------
+      "policy_notice"
+        string => ifelse(isvariable("def.motd_policy_notice"),
+                         "$(def.motd_policy_notice)",
+                         "Unauthorized access to this system is prohibited and may be prosecuted."),
+        comment => "Acceptable use notice rendered in the motd. Empty string omits the section";
+
+      # File managed by this bundle.
+      "motd_file" string => "/etc/motd";
+
+      # Only the values the template needs are passed as template_data. Relying
+      # on the implicit datastate() would serialize every variable and class in
+      # scope.
+      #
+      # CFEngine mustache sections require an actual boolean (or container), a
+      # non-empty string is not truthy, so the "has_*" flags gate the optional
+      # sections.
+      "template_data"
+        data => parsejson(format('{
+                                    "organization":     "%s",
+                                    "support_contact":  "%s",
+                                    "policy_notice":    "%s",
+                                    "has_support_contact": %s,
+                                    "has_policy_notice":   %s,
+                                    "fqhost":           "%s",
+                                    "os":               "%s"
+                                  }',
+                                 "$(organization)",
+                                 "$(support_contact)",
+                                 "$(policy_notice)",
+                                 ifelse(strcmp("$(support_contact)", ""), "false", "true"),
+                                 ifelse(strcmp("$(policy_notice)", ""),   "false", "true"),
+                                 "$(sys.fqhost)",
+                                 "$(sys.ostype)"));
+
+      "_rule" string => "###############################################################################";
+
+      "template"
+        string => concat(
+          "$(_rule)$(const.n)",
+          "  {{{organization}}}$(const.n)",
+          "$(_rule)$(const.n)",
+          "$(const.n)",
+          "  Host : {{{fqhost}}}$(const.n)",
+          "  OS   : {{{os}}}$(const.n)",
+          "{{#has_support_contact}}  Help : {{{support_contact}}}$(const.n){{/has_support_contact}}",
+          "{{#has_policy_notice}}$(const.n)  {{{policy_notice}}}$(const.n){{/has_policy_notice}}",
+          "$(const.n)",
+          "  This host is managed by CFEngine. Local changes may be reverted.$(const.n)");
+
+  files:
+
+      "$(motd_file)"
+        create => "true",
+        edit_template_string => "$(template)",
+        template_method => "inline_mustache",
+        template_data => @(template_data),
+        perms => motd_perms("0644", "root", "root"),
+        classes => motd_results("motd"),
+        comment => "Render the message of the day from the three tunable settings";
+
+  reports:
+    motd_repaired::
+      "Updated $(motd_file) for '$(organization)'";
+
+    motd_failed::
+      "Failed to update $(motd_file)";
+
+    (inform_mode|verbose_mode).motd_kept::
+      "$(motd_file) already matches policy for '$(organization)'";
+}
+
+body perms motd_perms(mode, user, group)
+# @brief Set file mode, owner and group
+{
+      mode   => "$(mode)";
+      owners => { "$(user)" };
+      groups => { "$(group)" };
+      rxdirs => "false";
+}
+
+body classes motd_results(prefix)
+# @brief Define namespace scoped outcome classes prefixed with "$(prefix)"
+{
+      promise_repaired  => { "$(prefix)_repaired" };
+      repair_failed     => { "$(prefix)_failed" };
+      repair_denied     => { "$(prefix)_failed" };
+      repair_timeout    => { "$(prefix)_failed" };
+      promise_kept      => { "$(prefix)_kept" };
+      scope             => "namespace";
+}

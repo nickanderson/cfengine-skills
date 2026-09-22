@@ -1,0 +1,7 @@
+{
+  "variables": {
+    "default:def.motd_path": "/etc/motd",
+    "default:def.motd_banner": "*** Example Corp - authorized use only ***",
+    "default:def.motd_contact": "ops@example.com"
+  }
+}
