@@ -36,9 +36,10 @@ updated weekly. Override with `CFENGINE_DOCS_DIR`.
 ## Prerequisites
 
 - [Claude Code](https://code.claude.com/)
+- `cf-remote` -- optional but recommended. Tooling to provision install and bootstrap CFEngine. (https://github.com/cfengine/cf-remote) (`uv tool install cf-remote`).
+- CFEngine CLI -- optional but recommended. Tooling to help work with CFEngine and policy. (https://github.com/cfengine/cfengine-cli) (`uv tool install cfengine`).
 - CFEngine (`cf-agent`) -- optional but recommended. Install from
-  [cfengine.com/downloads](https://cfengine.com/downloads) or via the
-  `cfengine` CLI (`pipx install cfengine && cfengine install`)
+  [cfengine.com/downloads](https://cfengine.com/downloads) or via `cf-remote` or `cfengine` CLI
 
 ## License
 
