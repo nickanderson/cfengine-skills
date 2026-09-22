@@ -14,7 +14,7 @@ CFEngine policy.
 Clone the repo, then link the skill into your Claude Code skills directory:
 
 ```bash
-git clone https://github.com/nickanderson/cfengine-skills-public.git \
+git clone https://github.com/nickanderson/cfengine-skills.git \
     ~/src/cfengine-skills
 ln -s ~/src/cfengine-skills/cfengine-policy ~/.claude/skills/cfengine-policy
 ```
