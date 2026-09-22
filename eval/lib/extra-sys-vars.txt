@@ -1,0 +1,13 @@
+# Real sys.* variables that a plain, unbootstrapped Community agent in the eval
+# container does not define, so they would otherwise look hallucinated.
+# Unioned into the allowlist by refresh-sys-vars.sh.
+
+# Enterprise edition only
+cfengine_roles
+enterprise_version
+nova_version
+
+# Defined only once the agent is bootstrapped to a hub
+last_policy_update
+policy_hub
+policy_hub_port

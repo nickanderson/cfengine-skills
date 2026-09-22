@@ -1,0 +1,19 @@
+{
+  "id": "01-motd",
+  "title": "MOTD with 3 augments-tunable variables",
+  "prompt_file": "prompt.txt",
+  "expect": {
+    "min_tunables": 3,
+    "require_augments_example": true
+  },
+  "weights": {
+    "validate": 25,
+    "sys_vars": 10,
+    "tunable_count": 15,
+    "isvariable_pattern": 20,
+    "qualified_refs": 10,
+    "augments_example": 10,
+    "augments_keys_match": 10
+  },
+  "rubric_version": 2
+}

@@ -1,0 +1,23 @@
+# Host-specific: regenerated at the start of every run
+cache/
+
+# compare.py imports report.py
+bin/__pycache__/
+
+# Superseded runs, kept on disk for reference but not published
+archive/
+
+# Ad-hoc run logs
+results/*.log
+
+# Redundant with response.md + result.json, and carries session ids / host paths
+results/**/raw.json
+
+# Always empty in practice
+results/**/stderr.log
+
+# Generated: rebuild offline with ./eval/run-eval.sh --report-only
+results/**/report.html
+results/compare.html
+results/timeline.html
+results/latest-report.html

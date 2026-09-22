@@ -1,0 +1,2 @@
+# Personal Claude Code overrides (holds the eval auto-approve rule)
+.claude/settings.local.json
