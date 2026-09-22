@@ -13,7 +13,16 @@ SERIES = {
     "with-skill": {"light": "#2a78d6", "dark": "#3987e5", "label": "With skill"},
     "no-skill":   {"light": "#eb6834", "dark": "#d95926", "label": "No skill"},
 }
-ARMS = ["no-skill", "with-skill"]
+VARIANTS = ["no-skill", "with-skill"]
+
+
+def variant_of(row):
+    """Which side of the comparison a row belongs to.
+
+    Recorded results predating the rename carry "arm"; they are historical
+    records and are not rewritten, so both spellings are read here.
+    """
+    return row.get("variant") or row.get("arm") or "?"
 
 CSS = """
 :root { color-scheme: light; --surface-1:#fcfcfb; --plane:#f9f9f7; --ink:#0b0b0b;
@@ -149,11 +158,11 @@ def chart(case, series, labels, maxscore):
                        'fill="var(--muted)" style="font-variant-numeric:tabular-nums">%s</text>'
                        % (X(i), mt + ph + 20, e(lab)))
 
-    for arm in ARMS:
-        vals = series.get(arm)
+    for variant in VARIANTS:
+        vals = series.get(variant)
         if not vals:
             continue
-        col = "var(--s1)" if arm == "with-skill" else "var(--s2)"
+        col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
         pts = [(X(i), Y(v)) for i, v in enumerate(vals) if v is not None]
         if len(pts) > 1:
             out.append('<polyline fill="none" stroke="%s" stroke-width="2" stroke-linejoin="round" '
@@ -165,18 +174,18 @@ def chart(case, series, labels, maxscore):
         if pts:
             x, y = pts[-1]
             out.append('<text x="%.1f" y="%.1f" font-size="12" font-weight="600" fill="%s">%s %.0f</text>'
-                       % (x + 10, y + 4, col, e(SERIES[arm]["label"]), vals[-1]))
+                       % (x + 10, y + 4, col, e(SERIES[variant]["label"]), vals[-1]))
 
     hover = []
     for i, lab in enumerate(labels):
         rows = ""
-        for arm in ARMS:
-            v = (series.get(arm) or [None] * n)[i]
+        for variant in VARIANTS:
+            v = (series.get(variant) or [None] * n)[i]
             if v is None:
                 continue
-            col = "var(--s1)" if arm == "with-skill" else "var(--s2)"
+            col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
             rows += ('<div><span class="swatch" style="background:%s"></span>%s <b>%.1f</b></div>'
-                     % (col, SERIES[arm]["label"], v))
+                     % (col, SERIES[variant]["label"], v))
         hover.append({"x": round(X(i), 1), "label": lab, "rows": rows})
 
     return ('<svg data-chart="%s" viewBox="0 0 %d %d" width="100%%" role="img" '
@@ -185,7 +194,7 @@ def chart(case, series, labels, maxscore):
                "".join(out)))
 
 
-def functional_tile(arm, fn):
+def functional_tile(variant, fn):
     """Headline tile for the dry-run proof. A policy can score low on the
     conformance checks and still honour augments, so this is reported beside the
     score rather than buried in the per-run detail."""
@@ -209,7 +218,7 @@ def functional_tile(arm, fn):
     else:
         cls, badge, val = "detail", "NOT RUN", "n/a"
         detail = e(status or "pass --functional to measure this")
-    col = "var(--s1)" if arm == "with-skill" else "var(--s2)"
+    col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
     # An unmeasured result is muted: the badge carries the status, so the number
     # slot must not shout in a status colour it has not earned.
     vstyle = ' style="color:var(--muted)"' if val == "n/a" else ""
@@ -217,20 +226,20 @@ def functional_tile(arm, fn):
             'Augments override &middot; %s</div>'
             '<div class="v %s"%s>%s <span class="badge %s">%s</span></div>'
             '<div class="m">%s</div></div>'
-            % (col, e(SERIES[arm]["label"]), "" if vstyle else cls, vstyle, val, cls, badge, detail))
+            % (col, e(SERIES[variant]["label"]), "" if vstyle else cls, vstyle, val, cls, badge, detail))
 
 
 def legend():
     return ('<div class="legend">'
             + "".join('<span><span class="swatch" style="background:%s"></span>%s</span>'
                       % ("var(--s1)" if a == "with-skill" else "var(--s2)", SERIES[a]["label"])
-                      for a in ARMS)
+                      for a in VARIANTS)
             + "</div>")
 
 
-def arm_detail(run_dir, case, arm):
+def variant_detail(run_dir, case, variant):
     parts = []
-    for d in sorted((run_dir / case / arm).glob("run*")):
+    for d in sorted((run_dir / case / variant).glob("run*")):
         rf = d / "result.json"
         if not rf.exists():
             continue
@@ -265,7 +274,7 @@ def arm_detail(run_dir, case, arm):
             "<details><summary>%s run%02d &mdash; score %.1f/%d</summary>"
             "<pre>%s\n\n%s%s</pre><details><summary>generated policy</summary><pre>%s</pre></details>"
             "</details>"
-            % (e(SERIES[arm]["label"]), r.get("run", 1), r["score"], r["max_score"],
+            % (e(SERIES[variant]["label"]), r.get("run", 1), r["score"], r["max_score"],
                e(meta), e("\n\n".join(lines)), e(fn_txt), e(policy or "(none captured)")))
     return "".join(parts)
 
@@ -309,7 +318,7 @@ def main():
                    if harness.get("eval_dirty") else "",
                    e(skill.get("commit", "")[:12])))
 
-    for case, arms in sorted(summary["cases"].items()):
+    for case, variants in sorted(summary["cases"].items()):
         title = case
         cf = run_dir.parent.parent / "cases" / case / "case.json"
         if cf.exists():
@@ -317,43 +326,43 @@ def main():
         body.append('<div class="card"><h2>%s <span class="detail">(%s)</span></h2>' % (e(title), e(case)))
 
         tiles = []
-        for arm in ARMS:
-            a = arms.get(arm)
+        for variant in VARIANTS:
+            a = variants.get(variant)
             if not a:
                 continue
-            col = "var(--s1)" if arm == "with-skill" else "var(--s2)"
+            col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
             spread = "" if a["runs"] < 2 else " &middot; %.0f&ndash;%.0f" % (a["score_min"], a["score_max"])
             tiles.append('<div class="tile"><div class="k"><span class="swatch" style="background:%s">'
                          '</span>%s</div><div class="v">%.0f<span class="m">/%d</span></div>'
                          '<div class="m">%d run%s%s</div></div>'
-                         % (col, SERIES[arm]["label"], a["score_mean"], a["max_score"],
+                         % (col, SERIES[variant]["label"], a["score_mean"], a["max_score"],
                             a["runs"], "" if a["runs"] == 1 else "s", spread))
-        if "delta" in arms:
-            d = arms["delta"]
+        if "delta" in variants:
+            d = variants["delta"]
             cls = "pass" if d > 0 else ("fail" if d < 0 else "detail")
             tiles.append('<div class="tile"><div class="k">Skill delta</div>'
                          '<div class="v %s">%+.0f</div><div class="m">points attributable '
                          'to the skill</div></div>' % (cls, d))
         body.append('<div class="tiles">%s</div>' % "".join(tiles))
 
-        ftiles = [functional_tile(a, arms[a]["functional"]) for a in ARMS
-                  if arms.get(a) and arms[a].get("functional")]
+        ftiles = [functional_tile(a, variants[a]["functional"]) for a in VARIANTS
+                  if variants.get(a) and variants[a].get("functional")]
         if ftiles:
             body.append('<div class="tiles" style="margin-top:14px">%s</div>' % "".join(ftiles))
 
-        ref = arms.get("with-skill") or arms.get("no-skill")
+        ref = variants.get("with-skill") or variants.get("no-skill")
         rows = []
         for cid, c in ref["checks"].items():
             cells = ""
-            for arm in ARMS:
-                a = arms.get(arm)
+            for variant in VARIANTS:
+                a = variants.get(variant)
                 if not a:
                     continue
                 ch = a["checks"].get(cid, {"earned_mean": 0})
                 cells += '<td class="num">%s%.1f</td>' % (mark(ch["earned_mean"], c["weight"]), ch["earned_mean"])
             rows.append("<tr><td>%s</td><td class=\"num detail\">%d</td>%s</tr>"
                         % (e(c["label"]), c["weight"], cells))
-        heads = "".join('<th class="num">%s</th>' % e(SERIES[a]["label"]) for a in ARMS if a in arms)
+        heads = "".join('<th class="num">%s</th>' % e(SERIES[a]["label"]) for a in VARIANTS if a in variants)
         body.append('<table><thead><tr><th>Check</th><th class="num">Weight</th>%s</tr></thead>'
                     '<tbody>%s</tbody></table>' % (heads, "".join(rows)))
 
@@ -361,13 +370,13 @@ def main():
         runs = sorted({h["run_id"] for h in rel})
         labels = [r[4:6] + "-" + r[6:8] + " " + r[9:13] for r in runs]
         series = {}
-        for arm in ARMS:
+        for variant in VARIANTS:
             vals = []
             for rid in runs:
-                m = [h for h in rel if h["run_id"] == rid and h["arm"] == arm]
+                m = [h for h in rel if h["run_id"] == rid and variant_of(h) == variant]
                 vals.append(m[0]["score_mean"] if m else None)
             if any(v is not None for v in vals):
-                series[arm] = vals
+                series[variant] = vals
         body.append('<h2 style="margin-top:26px">Progression</h2>')
         if len(runs) >= 2:
             body.append(legend())
@@ -379,8 +388,8 @@ def main():
         for i, rid in enumerate(runs):
             sid = next((h["skill_id"] for h in rel if h["run_id"] == rid), "?")
             cells = ""
-            for arm in ARMS:
-                v = (series.get(arm) or [None] * len(runs))[i]
+            for variant in VARIANTS:
+                v = (series.get(variant) or [None] * len(runs))[i]
                 cells += '<td class="num">%s</td>' % ("&mdash;" if v is None else "%.1f" % v)
             d = ""
             if series.get("with-skill") and series.get("no-skill"):
@@ -392,13 +401,13 @@ def main():
         body.append('<details open><summary>Table view &mdash; every recorded run of this case</summary>'
                     '<table><thead><tr><th>Run</th><th>Skill revision</th>%s<th class="num">Delta</th>'
                     '</tr></thead><tbody>%s</tbody></table></details>'
-                    % ("".join('<th class="num">%s</th>' % e(SERIES[a]["label"]) for a in ARMS),
+                    % ("".join('<th class="num">%s</th>' % e(SERIES[a]["label"]) for a in VARIANTS),
                        "".join(trows)))
 
         body.append('<h2 style="margin-top:26px">This run</h2>')
-        for arm in ARMS:
-            if arm in arms:
-                body.append(arm_detail(run_dir, case, arm))
+        for variant in VARIANTS:
+            if variant in variants:
+                body.append(variant_detail(run_dir, case, variant))
         body.append("</div>")
 
     doc = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"

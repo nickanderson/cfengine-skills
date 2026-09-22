@@ -7,7 +7,7 @@
 # augments/isvariable instrumentation, and writes a timestamped result set
 # stamped with the skill's git hash so progression is tracked across revisions.
 #
-#   ./eval/run-eval.sh                         # all cases, sonnet, both arms
+#   ./eval/run-eval.sh                         # all cases, sonnet, both variants
 #   ./eval/run-eval.sh --case 01-motd --runs 3
 #   ./eval/run-eval.sh --report-only           # rebuild the report from results
 set -euo pipefail
@@ -24,7 +24,7 @@ IMAGE=${CFEVAL_IMAGE:-localhost/cfengine-test:3.27.0}
 
 MODEL=sonnet
 RUNS=1
-ARMS="both"
+VARIANTS="both"
 TIMEOUT=900
 LABEL=""
 OPEN_REPORT=1
@@ -49,8 +49,8 @@ usage() {
 Options:
   --case ID          case to run (repeatable; default: every dir in eval/cases)
   --model NAME       model alias passed to claude (default: sonnet)
-  --runs N           repetitions per arm, for variance (default: 1)
-  --arm ARM          both | with-skill | no-skill (default: both)
+  --runs N           repetitions per variant, for variance (default: 1)
+  --variant VARIANT          both | with-skill | no-skill (default: both)
   --label TEXT       suffix appended to the result directory name
   --timeout SECS     per-invocation timeout (default: 900)
   --functional       additionally dry-run the policy to prove augments override
@@ -68,7 +68,8 @@ while [ $# -gt 0 ]; do
     --case)        CASES+=("$2"); shift 2 ;;
     --model)       MODEL=$2; shift 2 ;;
     --runs)        RUNS=$2; shift 2 ;;
-    --arm)         ARMS=$2; shift 2 ;;
+    --variant)         VARIANTS=$2; shift 2 ;;
+    --arm)             VARIANTS=$2; shift 2 ;;   # pre-rename alias, undocumented
     --label)       LABEL=$2; shift 2 ;;
     --timeout)     TIMEOUT=$2; shift 2 ;;
     --functional)  FUNCTIONAL=1; shift ;;
@@ -108,11 +109,11 @@ if [ ${#CASES[@]} -eq 0 ]; then
 fi
 [ ${#CASES[@]} -gt 0 ] || die "no cases found under $EVAL_DIR/cases"
 
-case "$ARMS" in
-  both)       ARM_LIST=(no-skill with-skill) ;;
-  with-skill) ARM_LIST=(with-skill) ;;
-  no-skill)   ARM_LIST=(no-skill) ;;
-  *)          die "--arm must be both, with-skill or no-skill" ;;
+case "$VARIANTS" in
+  both)       VARIANT_LIST=(no-skill with-skill) ;;
+  with-skill) VARIANT_LIST=(with-skill) ;;
+  no-skill)   VARIANT_LIST=(no-skill) ;;
+  *)          die "--variant must be both, with-skill or no-skill" ;;
 esac
 
 # --- skill identity: what this run is measuring --------------------------------
@@ -172,8 +173,8 @@ else
   "timestamp": "$TS",
   "label": "$LABEL",
   "model": "$MODEL",
-  "runs_per_arm": $RUNS,
-  "arms": "$ARMS",
+  "runs_per_variant": $RUNS,
+  "variants": "$VARIANTS",
   "functional": $([ "$FUNCTIONAL" = 1 ] && echo true || echo false),
   "cfengine": "$CF_VERSION",
   "engine": "$ENGINE",
@@ -202,14 +203,14 @@ JSON
 fi
 
 # --- one model invocation in a throwaway jail ----------------------------------
-run_arm() {
-  local case_id=$1 arm=$2 idx=$3
+run_variant() {
+  local case_id=$1 variant=$2 idx=$3
   local case_dir="$EVAL_DIR/cases/$case_id"
-  local out="$RUN_DIR/$case_id/$arm/run$(printf '%02d' "$idx")"
+  local out="$RUN_DIR/$case_id/$variant/run$(printf '%02d' "$idx")"
   mkdir -p "$out"
 
   local jail
-  jail=$(mktemp -d "${TMPDIR:-/tmp}/cfeval-${case_id}-${arm}.XXXXXXXX")
+  jail=$(mktemp -d "${TMPDIR:-/tmp}/cfeval-${case_id}-${variant}.XXXXXXXX")
   mkdir -p "$jail/work" "$jail/config"
   # Fresh CLAUDE_CONFIG_DIR: no user CLAUDE.md, no pre-installed skills, no
   # plugins, no project settings. The skill under test is installed into this
@@ -218,7 +219,7 @@ run_arm() {
 
   local sysprompt
   sysprompt=$(cat "$EVAL_DIR/lib/base-system-prompt.txt")
-  if [ "$arm" = with-skill ]; then
+  if [ "$variant" = with-skill ]; then
     # Install into the jail's skills directory, flat -- Claude Code discovers
     # skills/<name>/SKILL.md and does not recurse, so a nested copy is invisible.
     # Copied rather than symlinked into the repo: a symlink would let the model
@@ -241,7 +242,7 @@ run_arm() {
   SKILL_SHA_BEFORE=$(sha256sum "$SKILL_MD" | cut -d' ' -f1)
 
   {
-    printf '#!/bin/sh\n# Re-run this arm exactly as the harness did. A fresh jail is created;\n'
+    printf '#!/bin/sh\n# Re-run this variant exactly as the harness did. A fresh jail is created;\n'
     printf '# its path is printed at the end so the artifacts can be inspected.\n'
     printf 'set -e\nHERE=$(cd "$(dirname "$0")" && pwd)\n'
     # repo-relative, so the reproduce script carries no absolute path:
@@ -250,7 +251,7 @@ run_arm() {
     printf 'JAIL=$(mktemp -d "${TMPDIR:-/tmp}/cfeval-replay.XXXXXXXX")\n'
     printf 'mkdir -p "$JAIL/work" "$JAIL/config"\n'
     printf 'cp "$HOME/.claude/.credentials.json" "$JAIL/config/" 2>/dev/null || true\n'
-    if [ "$arm" = with-skill ]; then
+    if [ "$variant" = with-skill ]; then
       printf 'mkdir -p "$JAIL/config/skills"\n'
       printf 'cp -a "$REPO/cfengine-policy" "$JAIL/config/skills/cfengine-policy"\n'
       printf 'cp -a "$REPO/scripts" "$JAIL/config/skills/scripts"\n'
@@ -268,7 +269,7 @@ run_arm() {
   chmod +x "$out/cmd.sh"
   cp "$case_dir/prompt.txt" "$out/prompt.txt"
 
-  echo "  -> $case_id/$arm run$idx (jail: $jail)"
+  echo "  -> $case_id/$variant run$idx (jail: $jail)"
   local rc=0
   ( cd "$jail/work" && CLAUDE_CONFIG_DIR="$jail/config" \
       CFENGINE_SKILL_UPDATE_DISABLE=1 timeout "$TIMEOUT" claude \
@@ -282,11 +283,11 @@ run_arm() {
 
   SKILL_SHA_AFTER=$(sha256sum "$SKILL_MD" | cut -d' ' -f1)
 
-  SYSPROMPT="$sysprompt" python3 - "$out" "$rc" "$arm" "$idx" "$MODEL" \
+  SYSPROMPT="$sysprompt" python3 - "$out" "$rc" "$variant" "$idx" "$MODEL" \
       "$SKILL_SHA_BEFORE" "$SKILL_SHA_AFTER" <<'PY'
 import json, os, sys
 from pathlib import Path
-out, rc, arm, idx, model = Path(sys.argv[1]), int(sys.argv[2]), sys.argv[3], int(sys.argv[4]), sys.argv[5]
+out, rc, variant, idx, model = Path(sys.argv[1]), int(sys.argv[2]), sys.argv[3], int(sys.argv[4]), sys.argv[5]
 sha_before, sha_after = sys.argv[6], sys.argv[7]
 
 
@@ -303,7 +304,7 @@ except ValueError:
 # Written verbatim; bin/scrub.py redacts this whole directory after analysis.
 (out / "response.md").write_text(text)
 (out / "system-prompt.txt").write_text(os.environ.get("SYSPROMPT", ""))
-meta = {"arm": arm, "run": idx, "model": model, "exit_code": rc, "cli": cli,
+meta = {"variant": variant, "run": idx, "model": model, "exit_code": rc, "cli": cli,
         "skill_sha256": sha_before}
 if sha_before != sha_after:
     # The skill was edited while this run was in flight: its result cannot be
@@ -311,7 +312,7 @@ if sha_before != sha_after:
     meta["skill_changed_during_run"] = True
     meta["skill_sha256_after"] = sha_after
     print("run-eval: WARNING skill changed during %s run%d -- result not attributable"
-          % (arm, idx), file=sys.stderr)
+          % (variant, idx), file=sys.stderr)
 (out / "meta.json").write_text(json.dumps(meta, indent=2))
 PY
 
@@ -319,7 +320,7 @@ PY
   cp -a "$jail/work/." "$out/workdir/" 2>/dev/null || true
   rm -rf "$jail"
 
-  local -a an=(--arm-dir "$out" --case-file "$case_dir/case.json"
+  local -a an=(--variant-dir "$out" --case-file "$case_dir/case.json"
                --sys-vars "$SYS_VARS" --stdlib "$STDLIB" --image "$IMAGE"
                --allow-from "$SKILL_MD" --allow-from "$case_dir/prompt.txt")
   [ "$FUNCTIONAL" = 1 ] && an+=(--functional)
@@ -334,14 +335,14 @@ PY
 }
 
 if [ "$REPORT_ONLY" != 1 ]; then
-  echo "eval: model=$MODEL skill=$SKILL_ID cases=${CASES[*]} arms=${ARM_LIST[*]} runs=$RUNS"
+  echo "eval: model=$MODEL skill=$SKILL_ID cases=${CASES[*]} variants=${VARIANT_LIST[*]} runs=$RUNS"
   echo "eval: engine=$ENGINE"
   echo "eval: results -> $RUN_DIR"
   for case_id in "${CASES[@]}"; do
     [ -f "$EVAL_DIR/cases/$case_id/case.json" ] || die "no such case: $case_id"
     for i in $(seq 1 "$RUNS"); do
-      for arm in "${ARM_LIST[@]}"; do
-        run_arm "$case_id" "$arm" "$i"
+      for variant in "${VARIANT_LIST[@]}"; do
+        run_variant "$case_id" "$variant" "$i"
       done
     done
   done

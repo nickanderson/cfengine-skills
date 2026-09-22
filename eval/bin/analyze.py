@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Analyze one eval arm: extract the generated policy, validate it with
+"""Analyze one eval variant: extract the generated policy, validate it with
 cf-promises, check for hallucinated sys.* variables and for the
 isvariable()/augments tunable pattern, then score against the case rubric.
 
-Writes <arm-dir>/result.json and prints a one-line summary.
+Writes <variant-dir>/result.json and prints a one-line summary.
 """
 
 import argparse
@@ -47,12 +47,12 @@ def looks_like_augments(obj):
     return isinstance(obj, dict) and bool(AUGMENTS_KEYS & set(obj.keys()))
 
 
-def collect(arm_dir):
+def collect(variant_dir):
     """Return (policy_paths, root, augments_paths, sources)."""
-    work = arm_dir / "workdir"
-    extracted = arm_dir / "extracted"
+    work = variant_dir / "workdir"
+    extracted = variant_dir / "extracted"
     response = ""
-    resp_file = arm_dir / "response.md"
+    resp_file = variant_dir / "response.md"
     if resp_file.exists():
         response = resp_file.read_text(errors="replace")
     blocks = extract_fenced(response)
@@ -420,7 +420,8 @@ def score(case, validation, sysvars, patterns):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--arm-dir", required=True)
+    ap.add_argument("--variant-dir", "--arm-dir", dest="variant_dir",
+                    required=True, help="the run directory to analyze")
     ap.add_argument("--case-file", required=True)
     ap.add_argument("--sys-vars", required=True)
     ap.add_argument("--stdlib", default="/var/cfengine/masterfiles/lib/stdlib.cf")
@@ -436,11 +437,11 @@ def main():
 
     CONTAINER["image"], engine = resolve_engine(args.image)
 
-    arm_dir = Path(args.arm_dir)
+    variant_dir = Path(args.variant_dir)
     case = json.loads(Path(args.case_file).read_text())
     known = {l.strip() for l in Path(args.sys_vars).read_text().splitlines() if l.strip()}
 
-    cf_paths, root, aug_paths, sources = collect(arm_dir)
+    cf_paths, root, aug_paths, sources = collect(variant_dir)
     policy_text = "\n".join(p.read_text(errors="replace") for p in cf_paths)
 
     validation = validate(root, cf_paths, args.stdlib)
@@ -450,7 +451,7 @@ def main():
     checks, total, maxscore = score(case, validation, sysvars, patterns)
 
     meta = {}
-    meta_file = arm_dir / "meta.json"
+    meta_file = variant_dir / "meta.json"
     if meta_file.exists():
         meta = json.loads(meta_file.read_text())
 
@@ -474,9 +475,9 @@ def main():
         "score": total,
         "max_score": maxscore,
     })
-    (arm_dir / "result.json").write_text(json.dumps(result, indent=2))
+    (variant_dir / "result.json").write_text(json.dumps(result, indent=2))
     print("%-11s score %5.1f/%d  validate=%s  unknown_sys=%d  tunables=%d  instrumented=%d  augments=%s"
-          % (result.get("arm", "?"), total, maxscore,
+          % (result.get("variant", "?"), total, maxscore,
              "ok" if validation["standalone_ok"] else ("stdlib" if validation.get("stdlib_ok") else "FAIL"),
              len(sysvars["unknown"]), len(patterns["tunables"]),
              len(patterns["instrumented"]),

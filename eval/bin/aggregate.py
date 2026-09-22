@@ -9,6 +9,11 @@ import statistics
 from pathlib import Path
 
 
+def variant_of(row):
+    """Recorded results predating the rename carry "arm"; read both."""
+    return row.get("variant") or row.get("arm") or "?"
+
+
 def mean(xs):
     return round(statistics.fmean(xs), 1) if xs else 0.0
 
@@ -31,10 +36,10 @@ def main():
     groups = {}
     for f in results:
         r = json.loads(f.read_text())
-        groups.setdefault((r["case"], r.get("arm", "?")), []).append(r)
+        groups.setdefault((r["case"], variant_of(r)), []).append(r)
 
     rows, summary = [], {"run_id": run_id, "info": info, "cases": {}}
-    for (case, arm), rs in sorted(groups.items()):
+    for (case, variant), rs in sorted(groups.items()):
         scores = [r["score"] for r in rs]
         checks = {}
         for cid in [c["id"] for c in rs[0]["checks"]]:
@@ -69,7 +74,7 @@ def main():
             "cost_usd": round(sum((r.get("cli") or {}).get("total_cost_usd") or 0 for r in rs), 4),
             "duration_ms": sum((r.get("cli") or {}).get("duration_ms") or 0 for r in rs),
         }
-        summary["cases"].setdefault(case, {})[arm] = agg
+        summary["cases"].setdefault(case, {})[variant] = agg
         skill = info.get("skill", {})
         harness = info.get("harness", {})
         rows.append({
@@ -80,7 +85,7 @@ def main():
             "eval_commit": harness.get("eval_commit", "unknown"),
             "eval_dirty": harness.get("eval_dirty"),
             "case": case,
-            "arm": arm,
+            "variant": variant,
             "skill_id": skill.get("id", "unknown"),
             "skill_commit": skill.get("commit", "unknown"),
             "skill_dirty": skill.get("dirty"),
@@ -94,9 +99,9 @@ def main():
             "checks": {k: v["earned_mean"] for k, v in checks.items()},
         })
 
-    for case, arms in summary["cases"].items():
-        if "with-skill" in arms and "no-skill" in arms:
-            arms["delta"] = round(arms["with-skill"]["score_mean"] - arms["no-skill"]["score_mean"], 1)
+    for case, variants in summary["cases"].items():
+        if "with-skill" in variants and "no-skill" in variants:
+            variants["delta"] = round(variants["with-skill"]["score_mean"] - variants["no-skill"]["score_mean"], 1)
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
 
     hist = Path(args.history)
@@ -115,10 +120,10 @@ def main():
     kept += [json.dumps(r) for r in rows]
     hist.write_text("\n".join(kept) + "\n")
 
-    for case, arms in sorted(summary["cases"].items()):
-        parts = ["%s %.1f" % (a, arms[a]["score_mean"]) for a in ("no-skill", "with-skill") if a in arms]
-        if "delta" in arms:
-            parts.append("delta %+.1f" % arms["delta"])
+    for case, variants in sorted(summary["cases"].items()):
+        parts = ["%s %.1f" % (a, variants[a]["score_mean"]) for a in ("no-skill", "with-skill") if a in variants]
+        if "delta" in variants:
+            parts.append("delta %+.1f" % variants["delta"])
         print("aggregate: %-14s %s" % (case, "  ".join(parts)))
 
 

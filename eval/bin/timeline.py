@@ -12,7 +12,7 @@ import html
 import json
 from pathlib import Path
 
-from report import CSS, SERIES, ARMS, e
+from report import CSS, SERIES, VARIANTS, e, variant_of
 
 JS = """
 const t = document.getElementById('tt');
@@ -80,7 +80,7 @@ def ruler_label(key):
     return "rubric v%s &middot; %s &middot; skill %s" % (rv, e(engine), e(delivery))
 
 
-def facets(runs, info_by_run, by_run_arm, models, maxscore, rubrics):
+def facets(runs, info_by_run, by_run_variant, models, maxscore, rubrics):
     """One row per model, each on its OWN run sequence.
 
     A shared x axis across models looks tidy but is unreadable here: a model
@@ -97,7 +97,7 @@ def facets(runs, info_by_run, by_run_arm, models, maxscore, rubrics):
     out = []
     for row_i, m in enumerate(models):
         top = mt + row_i * (rowh + gap)
-        mine = [r for r in runs if any((r, m, a) in by_run_arm for a in ARMS)]
+        mine = [r for r in runs if any((r, m, a) in by_run_variant for a in VARIANTS)]
         n = len(mine)
         # cap the spacing: with two runs, full-width spacing implies a gap in
         # time that is not there -- they are simply consecutive
@@ -141,11 +141,11 @@ def facets(runs, info_by_run, by_run_arm, models, maxscore, rubrics):
             out.append('<text x="%d" y="%.1f" text-anchor="end" font-size="9.5" '
                        'fill="var(--muted)">%d</text>' % (ml - 5, y + 3, round(maxscore * gv / 100)))
 
-        for arm in ARMS:
-            col = "var(--s1)" if arm == "with-skill" else "var(--s2)"
+        for variant in VARIANTS:
+            col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
             seg = []
             for i, rid in enumerate(mine):
-                row = by_run_arm.get((rid, m, arm))
+                row = by_run_variant.get((rid, m, variant))
                 if row is None:
                     if seg:
                         out.append(_poly(seg, col))
@@ -159,7 +159,7 @@ def facets(runs, info_by_run, by_run_arm, models, maxscore, rubrics):
                 out.append(_poly(seg, col))
 
             for i, rid in enumerate(mine):
-                row = by_run_arm.get((rid, m, arm))
+                row = by_run_variant.get((rid, m, variant))
                 if row is None:
                     continue
                 x = X(i)
@@ -178,14 +178,14 @@ def facets(runs, info_by_run, by_run_arm, models, maxscore, rubrics):
                        % (X(i), top + fh + 15, e(rid[4:6] + "-" + rid[6:8] + " " + rid[9:13])))
             tip = "<b>%s &middot; %s</b>" % (e(m), e(rid))
             tip += '<div>%s</div>' % ruler_label(engines[i])
-            for arm in ARMS:
-                row = by_run_arm.get((rid, m, arm))
+            for variant in VARIANTS:
+                row = by_run_variant.get((rid, m, variant))
                 if row is None:
                     continue
-                col = "var(--s1)" if arm == "with-skill" else "var(--s2)"
+                col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
                 tip += ('<div><span class="swatch" style="background:%s"></span>%s <b>%.1f</b> '
                         '(%g&ndash;%g over %d runs)</div>'
-                        % (col, SERIES[arm]["label"], row["score_mean"],
+                        % (col, SERIES[variant]["label"], row["score_mean"],
                            row["score_min"], row["score_max"], row["runs"]))
             out.append('<rect data-row=\'%s\' x="%.1f" y="%d" width="%.1f" height="%d" '
                        'fill="transparent" style="cursor:crosshair"/>'
@@ -216,7 +216,7 @@ def main():
     if not rows:
         raise SystemExit("timeline: no rows for case %s" % args.case)
 
-    by_run_arm = {(r["run_id"], r["model"], r["arm"]): r for r in rows}
+    by_run_variant = {(r["run_id"], r["model"], variant_of(r)): r for r in rows}
     runs = sorted({r["run_id"] for r in rows})
     models = sorted({r["model"] for r in rows})
     maxscore = rows[0]["max_score"]
@@ -238,7 +238,7 @@ def main():
         body.append('<p class="note" style="margin:0 0 12px">Each model is plotted on its own '
                     'run sequence, so the rows are not aligned in time with each other. '
                     'The thick pale bar behind a dot is the <b>spread across that run&rsquo;s '
-                    'repetitions</b>, not movement between runs &mdash; an unaided arm routinely '
+                    'repetitions</b>, not movement between runs &mdash; an unaided variant routinely '
                     'varies by 70+ points from one repetition to the next. Shaded bands mark '
                     '<b>ruler regimes</b>: a change of rubric, of the engine the policy is '
                     'validated in, re-bases the score, so lines are deliberately broken at '
@@ -247,19 +247,19 @@ def main():
     body.append('<div class="legend">'
                 + "".join('<span><span class="swatch" style="background:%s"></span>%s</span>'
                           % ("var(--s1)" if a == "with-skill" else "var(--s2)", SERIES[a]["label"])
-                          for a in ARMS) + '</div>')
-    body.append(facets(runs, info_by_run, by_run_arm, models, maxscore, rubrics))
+                          for a in VARIANTS) + '</div>')
+    body.append(facets(runs, info_by_run, by_run_variant, models, maxscore, rubrics))
 
     trows = []
     for rid in runs:
         info = info_by_run.get(rid, {})
         rv, engine, delivery = ruler_of(info, rubrics.get(rid))
         for m in models:
-            pair = {a: by_run_arm.get((rid, m, a)) for a in ARMS}
+            pair = {a: by_run_variant.get((rid, m, a)) for a in VARIANTS}
             if not any(pair.values()):
                 continue
             cells = ""
-            for a in ARMS:
+            for a in VARIANTS:
                 r = pair[a]
                 cells += ('<td class="num">&mdash;</td><td class="num detail">&mdash;</td>'
                           if r is None else

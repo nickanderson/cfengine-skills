@@ -12,7 +12,7 @@ import html
 import json
 from pathlib import Path
 
-from report import CSS, SERIES, ARMS, e  # one source of truth for the palette
+from report import CSS, SERIES, VARIANTS, e, variant_of  # one source of truth for the palette
 
 JS = """
 const t = document.getElementById('tt');
@@ -54,16 +54,16 @@ def load(rows_all, case):
     models = {}
     for r in rows:
         if r["run_id"] == latest[r["model"]]:
-            models.setdefault(r["model"], {})[r["arm"]] = r
+            models.setdefault(r["model"], {})[variant_of(r)] = r
     return models, latest
 
 
-def functional_of(results_dir, run_id, case, arm):
+def functional_of(results_dir, run_id, case, variant):
     f = Path(results_dir) / run_id / "summary.json"
     if not f.exists():
         return None
     try:
-        return json.loads(f.read_text())["cases"][case][arm].get("functional")
+        return json.loads(f.read_text())["cases"][case][variant].get("functional")
     except (ValueError, KeyError, OSError):
         return None
 
@@ -113,23 +113,23 @@ def dumbbell(models, order, maxscore):
 
     for i, m in enumerate(order):
         y = mt + rowh * i + 8
-        arms = models[m]
+        variants = models[m]
         out.append('<text x="%d" y="%.1f" text-anchor="end" font-size="13" fill="var(--ink)" '
                    'font-weight="600">%s</text>' % (ml - 14, y + 5, e(m)))
         pts = {}
-        for arm in ARMS:
-            r = arms.get(arm)
+        for variant in VARIANTS:
+            r = variants.get(variant)
             if r:
-                pts[arm] = r["score_mean"]
+                pts[variant] = r["score_mean"]
         if len(pts) == 2:
             out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="var(--axis)" '
                        'stroke-width="2" stroke-linecap="round"/>'
                        % (X(pts["no-skill"]), y, X(pts["with-skill"]), y))
-        for arm in ARMS:
-            r = arms.get(arm)
+        for variant in VARIANTS:
+            r = variants.get(variant)
             if not r:
                 continue
-            col = "var(--s1)" if arm == "with-skill" else "var(--s2)"
+            col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
             lo, hi = r["score_min"], r["score_max"]
             if hi > lo:
                 out.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="%s" '
@@ -144,14 +144,14 @@ def dumbbell(models, order, maxscore):
                        'style="font-variant-numeric:tabular-nums">%+.0f</text>'
                        % (ml + pw + 14, y + 5, cls, d))
         tip = "<b>%s</b>" % e(m)
-        for arm in ARMS:
-            r = arms.get(arm)
+        for variant in VARIANTS:
+            r = variants.get(variant)
             if not r:
                 continue
-            col = "var(--s1)" if arm == "with-skill" else "var(--s2)"
+            col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
             tip += ('<div><span class="swatch" style="background:%s"></span>%s <b>%.1f</b> '
                     '(%g&ndash;%g, n=%d)</div>'
-                    % (col, SERIES[arm]["label"], r["score_mean"],
+                    % (col, SERIES[variant]["label"], r["score_mean"],
                        r["score_min"], r["score_max"], r["runs"]))
         out.append('<rect data-row=\'%s\' x="%d" y="%.1f" width="%d" height="%d" fill="transparent" '
                    'style="cursor:crosshair"/>'
@@ -172,31 +172,31 @@ def render_case(rows_all, results_dir, case):
     body.append('<div class="legend">'
                 + "".join('<span><span class="swatch" style="background:%s"></span>%s</span>'
                           % ("var(--s1)" if a == "with-skill" else "var(--s2)", SERIES[a]["label"])
-                          for a in ARMS) + '</div>')
+                          for a in VARIANTS) + '</div>')
     body.append(dumbbell(models, order, maxscore))
 
     rows = []
     for m in order:
-        arms = models[m]
+        variants = models[m]
         cells = ""
-        for arm in ARMS:
-            r = arms.get(arm)
+        for variant in VARIANTS:
+            r = variants.get(variant)
             if not r:
                 cells += '<td class="num">&mdash;</td><td class="num detail">&mdash;</td>'
                 continue
             spread = "&mdash;" if r["runs"] < 2 else "%g&ndash;%g" % (r["score_min"], r["score_max"])
             cells += ('<td class="num">%.1f</td><td class="num detail">%s</td>' % (r["score_mean"], spread))
         d = ""
-        if len(arms) == 2:
-            v = arms["with-skill"]["score_mean"] - arms["no-skill"]["score_mean"]
+        if len(variants) == 2:
+            v = variants["with-skill"]["score_mean"] - variants["no-skill"]["score_mean"]
             d = '<span class="%s">%+.1f</span>' % ("pass" if v > 0 else "fail" if v < 0 else "detail", v)
         fl, fc = fn_label(functional_of(results_dir, latest[m], case, "with-skill"))
-        n = max((arms[a]["runs"] for a in arms), default=0)
+        n = max((variants[a]["runs"] for a in variants), default=0)
         rows.append('<tr><td><b>%s</b></td><td class="num detail">%d</td>%s<td class="num">%s</td>'
                     '<td class="%s">%s</td><td class="detail"><code>%s</code></td></tr>'
                     % (e(m), n, cells, d, fc, fl, e(latest[m])))
     body.append('<details open><summary>Table view &mdash; mean, run range, and the functional '
-                'proof for the with-skill arm</summary><table><thead><tr>'
+                'proof for the with-skill variant</summary><table><thead><tr>'
                 '<th>Model</th><th class="num">n</th>'
                 '<th class="num">No skill</th><th class="num">range</th>'
                 '<th class="num">With skill</th><th class="num">range</th>'
