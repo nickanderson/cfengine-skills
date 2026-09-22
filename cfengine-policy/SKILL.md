@@ -4,11 +4,15 @@ description: >
   CFEngine policy language reference for writing, reviewing, and debugging
   .cf files, def.json augments, and cfbs projects. Use when working with
   CFEngine policy.
-allowed-tools: Bash(${CLAUDE_SKILL_DIR}/../scripts/ensure-docs.sh)
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/../scripts/ensure-docs.sh), Bash(${CLAUDE_SKILL_DIR}/../scripts/check-skill-update.sh)
 ---
 
 ```!
 ${CLAUDE_SKILL_DIR}/../scripts/ensure-docs.sh
+```
+
+```!
+${CLAUDE_SKILL_DIR}/../scripts/check-skill-update.sh
 ```
 
 # CFEngine Policy Reference

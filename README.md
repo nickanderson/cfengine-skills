@@ -33,6 +33,43 @@ On first use the skill:
 The documentation checkout is cached at `~/.local/share/cfengine/docs/` and
 updated weekly. Override with `CFENGINE_DOCS_DIR`.
 
+## Staying up to date
+
+The skill also checks whether its own checkout has fallen behind this repo, and
+tells Claude to ask you before doing anything about it. It never updates itself:
+the update is a `git pull` in your checkout, so it is yours to approve.
+
+It is built to stay out of your way.
+
+- Silent when there is nothing to decide. It prints only when the skill itself
+  has changed upstream.
+- Commits that do not touch the skill -- eval results, tests, this README --
+  are not worth interrupting you for, and do not trigger a notice.
+- It fetches at most weekly, and re-raises a notice you have already seen at
+  most weekly. A new upstream version re-notifies immediately.
+- Uncommitted local edits to the skill are reported, never discarded. If you
+  have edited the skill *and* upstream has moved, it says so and declines to
+  hand over a pull command.
+- A failed fetch, an unreachable remote, or a copied-in (non-git) install all
+  exit quietly. A skill that fails to render because the network is down is
+  worse than a skill that is a week stale.
+
+| Variable | Effect |
+|----------|--------|
+| `CFENGINE_SKILL_UPDATE_DISABLE=1` | Turn the check off entirely |
+| `CFENGINE_SKILL_UPDATE_INTERVAL_DAYS` | Days between fetches (default 7) |
+| `CFENGINE_SKILL_UPDATE_NOTICE_DAYS` | Days before repeating a notice (default 7) |
+
+## Tests
+
+```bash
+tests/test-ensure-docs.sh          # documentation checkout behaviour
+tests/test-check-skill-update.sh   # update-check behaviour
+```
+
+Both are hermetic -- local fixture repos stand in for the remotes, so they need
+no network and no CFEngine install.
+
 ## Prerequisites
 
 - [Claude Code](https://code.claude.com/)
