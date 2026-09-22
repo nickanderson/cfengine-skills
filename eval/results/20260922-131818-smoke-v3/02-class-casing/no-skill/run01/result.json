@@ -213,5 +213,9 @@
     }
   ],
   "score": 80.0,
-  "max_score": 100
+  "max_score": 100,
+  "model_id": "claude-sonnet-5",
+  "models_used": [
+    "claude-sonnet-5"
+  ]
 }

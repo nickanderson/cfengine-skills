@@ -11,5 +11,9 @@
     "is_error": false,
     "subtype": "success"
   },
-  "skill_sha256": "358159eaa4652992df4731b313b481d2a82a86976d6e989d9aecb3ce5509c15d"
+  "skill_sha256": "358159eaa4652992df4731b313b481d2a82a86976d6e989d9aecb3ce5509c15d",
+  "model_id": "claude-sonnet-5",
+  "models_used": [
+    "claude-sonnet-5"
+  ]
 }
