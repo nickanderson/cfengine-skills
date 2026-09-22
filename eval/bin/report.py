@@ -172,9 +172,12 @@ def chart(case, series, labels, maxscore):
             out.append('<circle cx="%.1f" cy="%.1f" r="4" fill="%s" stroke="var(--surface-1)" '
                        'stroke-width="2"/>' % (x, y, col))
         if pts:
+            # Label the last point drawn, not vals[-1]: a --variant run leaves
+            # the other series None at the newest position.
             x, y = pts[-1]
+            last = [v for v in vals if v is not None][-1]
             out.append('<text x="%.1f" y="%.1f" font-size="12" font-weight="600" fill="%s">%s %.0f</text>'
-                       % (x + 10, y + 4, col, e(SERIES[variant]["label"]), vals[-1]))
+                       % (x + 10, y + 4, col, e(SERIES[variant]["label"]), last))
 
     hover = []
     for i, lab in enumerate(labels):
