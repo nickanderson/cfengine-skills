@@ -103,9 +103,14 @@ Classes are booleans that guard promise evaluation.
 - Defined by: Hard classes automatically via the agents system discovery initialization (OS, time, hostname), `classes:` promises, or as the result of promise executions via a `classes` body, )
 - Scopes: `bundle` (default in agent bundles), `namespace` (default in common bundles and result of promise via classes body)
 - Namespace-qualified: `namespace:classname`
+- **Case-sensitive, with no way to switch it off.** `role_batch` and `role_Batch` are
+  different classes, and no class expression syntax or flag makes matching
+  case-insensitive. When classes come from external data, normalize the value
+  as you define the class (see *Classes from external data* below).
 
 **Hard classes** (always available): OS (`linux`, `windows`, `darwin`), architecture
 (`x86_64`), time (`Monday`, `September`, `Day21`, `Hr14`, `Min30`), hostname.
+Note the time classes are mixed case.
 
 ## Augments
 
@@ -324,6 +329,34 @@ Without `template_data`, `datastate()` is used implicitly -- this serializes
 every variable and class in scope and is expensive. Construct a data container
 with only the values the template needs.
 
+**Classes from external data (CMDB, inventory JSON):**
+```cfengine3
+vars:
+    "cmdb" data => readjson("$(this.promise_dirname)/cmdb.json");
+    "item" slist => getindices("cmdb[items]");
+classes:
+    # Force one casing, the one the conditions are written in. `with` avoids a
+    # throwaway variable; a vars: promise works just as well.
+    "role_$(with)" with => string_downcase(canonify("$(cmdb[role])"));
+reports:
+    # A condition carried in the data is used as-is.
+    "APPLIES: $(item)" if => "$(cmdb[items][$(item)][condition])";
+    # A bare value from the data, tested as a class: normalize it the same way.
+    "APPLIES: $(item)" if => canonify(string_downcase("role_$(cmdb[items][$(item)][role])"));
+```
+- Normalize the **class you define**, not the expression that tests it. Running
+  `string_downcase()` over a whole expression breaks references to mixed-case
+  hard classes: `role_batch.Monday` becomes `role_batch.monday`, which is never
+  true.
+- A `classes:` promise canonifies an invalid name silently (`role_Web-Server`
+  defines `role_Web_Server`). Class *expressions* do not: `if => "role_$(r)"`
+  with `r` = `Web-Server` reads `-` as part of the expression and never matches.
+  Wrap expanded names in `canonify()` wherever they are tested:
+  `if => canonify("role_$(r)")`.
+- Parenthesize a data-supplied expression before combining it with your own
+  classes. `.` binds tighter than `|`, so `"!maintenance.$(expr)"` with `expr` =
+  `a|b` means `(!maintenance.a)|b`. Write `"!maintenance.($(expr))"`.
+
 ## Common Mistakes
 
 1. **Policy files must be mode 600** (not group/world writable) or `cf-agent` refuses them
@@ -331,8 +364,10 @@ with only the values the template needs.
 3. **No `inventory:` promise type** -- use `vars:` with `meta => { "inventory", ... }`
 4. **`body common control` only in policy entries (`promises.cf`, `update.cf`, `standalone_self_upgrade.cf`) ** -- use `body file control` elsewhere
 5. **Commands with pipes/redirects need `contain => in_shell`**
-6. **Class names:** alphanumeric + underscore only. Use `canonify()` for dynamic names that can contain invalid characters.
+6. **Class names:** alphanumeric + underscore only, and case-sensitive. Defining a class canonifies its name for you; testing one does not, so wrap expanded names in `canonify()` inside `if =>` and other class expressions.
 7. **`strlen()` does not exist** -- the function is `string_length()`
+8. **`ifvarclass` is deprecated** -- use `if` (same behaviour); `unless` is its negation
+9. **`usebundle` does not accept a function call** -- `usebundle => canonify(...)` looks for a bundle named `canonify`. Compute the name in `vars:` and pass `usebundle => "$(name)"`; a name that matches no bundle aborts the whole agent run.
 
 ## 3-Pass Evaluation
 
@@ -351,7 +386,7 @@ Look up signatures with `cf-promises --syntax-description=json | jq '.functions.
 Commonly needed: `readfile`, `readjson`, `parsejson`, `mergedata`, `readstringarrayidx`,
 `getindices`, `getvalues`, `join`, `unique`, `difference`, `length`, `maplist`,
 `classesmatching`, `variablesmatching`, `findfiles`, `lsdir`, `fileexists`,
-`regcmp`, `regex_replace`, `canonify`, `ifelse`, `strcmp`, `isvariable`,
+`regcmp`, `regex_replace`, `canonify`, `string_downcase`, `string_upcase`, `ifelse`, `strcmp`, `isvariable`,
 `strftime`, `now`, `eval`, `format`, `string_mustache`, `execresult`, `returnszero`,
 `sort`, `nth`, `every`, `some`, `none`, `filter`.
 
