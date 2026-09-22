@@ -16,6 +16,13 @@ SERIES = {
 VARIANTS = ["no-skill", "with-skill"]
 
 
+def model_key(row):
+    """The model a history row measured. --model takes an alias that resolves to
+    the newest release, so rows are keyed by what it resolved to; rows from
+    before that was recorded are kept apart rather than guessed."""
+    return row.get("model_id") or "%s (unrecorded)" % row.get("model", "?")
+
+
 def variant_of(row):
     """Which side of the comparison a row belongs to.
 
@@ -307,9 +314,12 @@ def main():
     body = []
     body.append('<h1>cfengine-policy skill eval</h1>')
     harness = info.get("harness", {})
+    # The alias passed to --model, and what it resolved to in this run.
+    ids = sorted({model_key(h) for h in hist if h["run_id"] == run_dir.name})
+    model_txt = e(info.get("model", "?")) + (" &rarr; " + ", ".join(e(i) for i in ids) if ids else "")
     body.append('<p class="sub">%s &middot; model <code>%s</code> &middot; skill <code>%s</code>%s '
                 '&middot; %s</p>'
-                % (e(info.get("timestamp", run_dir.name)), e(info.get("model", "?")),
+                % (e(info.get("timestamp", run_dir.name)), model_txt,
                    e(skill.get("id", "?")),
                    ' &middot; <span class="fail">uncommitted edits</span>' if skill.get("dirty") else "",
                    e(info.get("cfengine", ""))))
@@ -369,7 +379,8 @@ def main():
         body.append('<table><thead><tr><th>Check</th><th class="num">Weight</th>%s</tr></thead>'
                     '<tbody>%s</tbody></table>' % (heads, "".join(rows)))
 
-        rel = [h for h in hist if h["case"] == case and h["model"] == info.get("model")]
+        this = {model_key(h) for h in hist if h["run_id"] == run_dir.name and h["case"] == case}
+        rel = [h for h in hist if h["case"] == case and model_key(h) in this]
         runs = sorted({h["run_id"] for h in rel})
         labels = [r[4:6] + "-" + r[6:8] + " " + r[9:13] for r in runs]
         series = {}
