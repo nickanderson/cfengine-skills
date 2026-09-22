@@ -1,0 +1,9 @@
+body common control
+# @brief Stand alone entry point, useful for testing:
+#        cf-agent -KI -f ./promises.cf
+{
+      bundlesequence => { "motd" };
+
+      inputs => { "$(sys.libdir)/stdlib.cf",
+                  "motd.cf" };
+}

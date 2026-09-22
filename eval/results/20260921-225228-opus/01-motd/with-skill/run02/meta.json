@@ -1,0 +1,15 @@
+{
+  "variant": "with-skill",
+  "run": 2,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 153306,
+    "duration_api_ms": 149114,
+    "num_turns": 12,
+    "total_cost_usd": 0.71001,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d"
+}

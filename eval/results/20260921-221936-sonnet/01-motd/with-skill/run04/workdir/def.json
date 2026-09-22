@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_organization": "Northern.tech",
+    "motd_support_contact": "admin@example.com",
+    "motd_banner_message": "This system is for authorized use only. All activity is logged and monitored."
+  }
+}

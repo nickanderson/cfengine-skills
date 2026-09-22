@@ -1,0 +1,7 @@
+{
+  "variables": {
+    "motd_banner": "ACME Corp - Production Infrastructure",
+    "motd_message": "Authorized use only.\n\nThis system is managed by CFEngine; changes made by hand are not durable.\nAll activity on this system is logged and may be reviewed.",
+    "motd_contact": "ops@example.com"
+  }
+}

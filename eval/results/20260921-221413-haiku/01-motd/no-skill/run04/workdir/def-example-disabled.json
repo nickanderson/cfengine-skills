@@ -1,0 +1,14 @@
+{
+  "classes": {
+    "any": [
+      "inventory_cmdb"
+    ]
+  },
+  "vars": {
+    "manage_motd": {
+      "motd_enabled": "false",
+      "motd_file": "/etc/motd",
+      "motd_content": ""
+    }
+  }
+}

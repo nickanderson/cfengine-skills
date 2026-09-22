@@ -1,0 +1,81 @@
+###############################################################################
+# promises.cf - Manage /etc/motd (message of the day)
+#
+# Three independent variables control the managed content and are each
+# configurable via CFEngine augments (def.json), without editing this file:
+#
+#   def.motd_message  - the text written into the motd file
+#   def.motd_file     - the path of the file managed as the motd
+#   def.motd_mode     - the permission mode applied to the motd file
+#
+# Defaults for these three variables are shipped in def.json next to this
+# file; CFEngine merges augments in before policy evaluation, so overriding
+# a default only requires editing def.json (e.g. via a site-specific
+# def.json shipped by policy augmentation), never this policy.
+###############################################################################
+
+body common control
+{
+      bundlesequence => { "motd" };
+      inputs         => { "def.json" };
+}
+
+bundle agent motd
+# @brief Manage the system message of the day using three augment-configurable
+# variables: message content, target file path, and file permission mode.
+{
+  vars:
+      "message"
+        string => "$(def.motd_message)",
+        comment => "Content of the motd file. Default set in def.json as default:def.motd_message.";
+
+      "file"
+        string => "$(def.motd_file)",
+        comment => "Path of the motd file to manage. Default set in def.json as default:def.motd_file.";
+
+      "mode"
+        string => "$(def.motd_mode)",
+        comment => "Permission mode applied to the motd file. Default set in def.json as default:def.motd_mode.";
+
+  files:
+      "$(motd.file)"
+        create        => "true",
+        perms         => motd_perms("$(motd.mode)"),
+        edit_line     => motd_set_content("$(motd.message)"),
+        edit_defaults => motd_empty_before_use,
+        classes       => motd_if_repaired("motd_updated"),
+        comment       => "Ensure the motd file exists with the configured content and permissions";
+
+  reports:
+    "$(this.bundle): updated $(motd.file) (mode $(motd.mode))"
+      ifvarclass => "motd_updated";
+}
+
+bundle edit_line motd_set_content(content)
+# @brief Replace the file content with the lines from a newline-separated string
+{
+  vars:
+      "lines" slist => splitstring("$(content)", "\n", "9999");
+
+  insert_lines:
+      "$(lines)"
+        comment => "Insert each configured line of the motd message";
+}
+
+body edit_defaults motd_empty_before_use
+{
+      empty_file_before_editing => "true";
+      edit_backup               => "false";
+}
+
+body perms motd_perms(m)
+{
+      mode   => "$(m)";
+      owners => { "root" };
+      groups => { "root" };
+}
+
+body classes motd_if_repaired(x)
+{
+      promise_repaired => { "$(x)" };
+}

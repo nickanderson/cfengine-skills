@@ -1,0 +1,56 @@
+#############################################################################
+# services/motd.cf
+#
+# Manages /etc/motd from three independent, augment-configurable variables:
+#
+#   def.motd_message       - greeting text shown at the top of the file
+#   def.motd_show_sysinfo  - "true"/"false", whether to append a live
+#                             hostname/OS/kernel line
+#   def.motd_footer        - closing notice shown at the bottom of the file
+#
+# Any of the three may be overridden per-host/per-group via an augments
+# file (def.json) without editing this policy. See def.json in this
+# directory for an example.
+#############################################################################
+
+bundle agent motd
+{
+  vars:
+
+      "message"
+        string => ifelse(isvariable("def.motd_message"),
+                          "$(def.motd_message)",
+                          "Welcome to $(sys.fqhost)"),
+        comment => "Greeting text at the top of /etc/motd. Override via def.json as def.motd_message.";
+
+      "show_sysinfo"
+        string => ifelse(isvariable("def.motd_show_sysinfo"),
+                          "$(def.motd_show_sysinfo)",
+                          "true"),
+        comment => "Whether to append a live system info line. Override via def.json as def.motd_show_sysinfo.";
+
+      "footer"
+        string => ifelse(isvariable("def.motd_footer"),
+                          "$(def.motd_footer)",
+                          "Unauthorized use of this system is prohibited."),
+        comment => "Closing notice at the bottom of /etc/motd. Override via def.json as def.motd_footer.";
+
+      "sysinfo_line"
+        string => "$(sys.fqhost) -- $(sys.ostype) $(sys.flavor), kernel $(sys.release)",
+        comment => "Rendered system information line, included only when show_sysinfo is enabled.";
+
+      "content"
+        string => ifelse(strcmp("$(motd.show_sysinfo)", "true"),
+                          format("%s$(const.n)$(const.n)%s$(const.n)$(const.n)%s$(const.n)",
+                                 "$(motd.message)", "$(motd.sysinfo_line)", "$(motd.footer)"),
+                          format("%s$(const.n)$(const.n)%s$(const.n)",
+                                 "$(motd.message)", "$(motd.footer)")),
+        comment => "Full rendered /etc/motd content, assembled from the three variables above.";
+
+  files:
+
+      "/etc/motd"
+        create  => "true",
+        content => "$(motd.content)",
+        comment => "Render /etc/motd from the message, show_sysinfo and footer variables.";
+}

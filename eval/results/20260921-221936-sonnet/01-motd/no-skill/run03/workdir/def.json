@@ -1,0 +1,16 @@
+{
+  "variables": {
+    "def.motd_message": {
+      "value": "Welcome to ACME Corp. Authorized users only.",
+      "comment": "Main greeting shown at the top of /etc/motd"
+    },
+    "def.motd_show_sysinfo": {
+      "value": "true",
+      "comment": "Set to \"false\" to omit the hostname/OS/IP block"
+    },
+    "def.motd_footer": {
+      "value": "Contact: admin@example.com | Managed by CFEngine",
+      "comment": "Footer line shown at the bottom of /etc/motd"
+    }
+  }
+}

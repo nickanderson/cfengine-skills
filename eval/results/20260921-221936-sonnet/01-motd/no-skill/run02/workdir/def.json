@@ -1,0 +1,16 @@
+{
+    "variables": {
+        "default:def.motd_message": {
+            "value": "Welcome. This system is for authorized use only. All activity may be monitored and reported.\n",
+            "comment": "Content written to the message-of-the-day file"
+        },
+        "default:def.motd_file": {
+            "value": "/etc/motd",
+            "comment": "Path of the file managed as the message of the day"
+        },
+        "default:def.motd_mode": {
+            "value": "644",
+            "comment": "Permission mode applied to the motd file"
+        }
+    }
+}

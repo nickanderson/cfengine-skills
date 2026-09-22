@@ -1,0 +1,12 @@
+{
+  "variables": {
+    "motd_banner": "*** ACME Inc. - Authorized use only ***",
+    "motd_message": [
+      "All activity on this system is logged and monitored.",
+      "Disconnect immediately if you are not an authorized user.",
+      "",
+      "Host: $(sys.fqhost)   Policy server: $(sys.policy_hub)"
+    ],
+    "motd_footer": "Questions? Contact admin@example.com"
+  }
+}

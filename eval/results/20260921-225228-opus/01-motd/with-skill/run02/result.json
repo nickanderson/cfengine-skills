@@ -1,0 +1,152 @@
+{
+  "variant": "with-skill",
+  "run": 2,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 153306,
+    "duration_api_ms": 149114,
+    "num_turns": 12,
+    "total_cost_usd": 0.71001,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "case": "01-motd",
+  "case_title": "MOTD with 3 augments-tunable variables",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "motd.cf",
+      "promises.cf"
+    ],
+    "augments_files": [
+      "def.json"
+    ],
+    "sources": {
+      "policy": "workdir",
+      "augments": "workdir"
+    },
+    "policy_bytes": 4666
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": true,
+    "standalone": [
+      {
+        "file": "promises.cf",
+        "rc": 0,
+        "output": "",
+        "bundlesequence": null
+      }
+    ],
+    "stdlib_retried": false,
+    "stdlib_ok": null,
+    "stdlib": [],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [
+      "flavor",
+      "fqhost"
+    ],
+    "unknown": [],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [
+      "def.motd_contact",
+      "def.motd_notices",
+      "def.motd_organization"
+    ],
+    "tunables": [
+      "def.motd_contact",
+      "def.motd_notices",
+      "def.motd_organization"
+    ],
+    "instrumented": [
+      "def.motd_contact",
+      "def.motd_organization"
+    ],
+    "fully_qualified": [],
+    "augments_files": [
+      "def.json"
+    ],
+    "augments_keys": [
+      "default:def.motd_contact",
+      "default:def.motd_notices",
+      "default:def.motd_organization"
+    ],
+    "matched_keys": [
+      "default:def.motd_contact",
+      "default:def.motd_notices",
+      "default:def.motd_organization"
+    ],
+    "unmatched_tunables": []
+  },
+  "functional": {
+    "ran": true,
+    "status": "ok",
+    "overridden": [
+      "motd_contact",
+      "motd_notices",
+      "motd_organization"
+    ],
+    "not_overridden": [],
+    "log": " warning: '@(def.motd_notices)' failed - variable is not list but string\n warning: '@(def.motd_notices)' failed - variable is not list but string\n warning: '@(def.motd_notices)' failed - variable is not list but string\n warning: '@(def.motd_notices)' failed - variable is not list but string\n warning: '@(def.motd_notices)' failed - variable is not list but string\n warning: '@(def.motd_notices)' failed - variable is not list but string\n warning: '@(def.motd_notices)' failed - variable is not list but string\n warning: '@(def.motd_notices)' failed - variable is not list but string\ndefault:def.motd_contact                 CFEVALSENTINEL_motd_contact                                  source=augments_file                                                             \ndefault:def.motd_notices                 CFEVALSENTINEL_motd_notices                                  source=augments_file                                                             \ndefault:def.motd_organization            CFEVALSENTINEL_motd_organization                             source=augments_file                                                             \ndefault:motd._contact                    CFEVALSENTINEL_motd_contact                                  source=promise                           Where users should go for help with this host\ndefault:motd._notices                     {\"CFEVALSENTINEL_motd_notices\"}                             source=promise                           Notices supplied by augments            \ndefault:motd._notices_data               [\"CFEVALSENTINEL_motd_notices\"]                              source=promise                           The notice lines as a JSON array for the template\ndefault:motd._organization               CFEVALSENTINEL_motd_organization                             source=promise                           Organization name displayed at the top of the motd\ndefault:motd._template_data              {\"contact\":\"CFEVALSENTINEL_motd_contact\",\"hostname\":\"cfeval\",\"notices\":[\"CFEVALSENTINEL_motd_notices\"],\"organization\":\"CFEVALSENTINEL_motd_organization\",\"os\":\"rocky_9\"} source=promise                           Only the values the template needs, so datastate() is not used"
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 25,
+      "earned": 25,
+      "detail": "cf-promises -cf clean"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 10,
+      "earned": 10,
+      "detail": "clean (2 referenced)"
+    },
+    {
+      "id": "tunable_count",
+      "label": "3 augments tunables present",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "3 found"
+    },
+    {
+      "id": "isvariable_pattern",
+      "label": "ifelse(isvariable(...)) instrumentation",
+      "weight": 20,
+      "earned": 13.33,
+      "detail": "2 of 3 tunables wrapped in ifelse()"
+    },
+    {
+      "id": "qualified_refs",
+      "label": "Tunables namespaced consistently",
+      "weight": 10,
+      "earned": 10,
+      "detail": "all bare def."
+    },
+    {
+      "id": "augments_example",
+      "label": "def.json augments example provided",
+      "weight": 10,
+      "earned": 10,
+      "detail": "def.json"
+    },
+    {
+      "id": "augments_keys_match",
+      "label": "def.json keys match policy tunables",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "3 matched"
+    }
+  ],
+  "score": 93.3,
+  "max_score": 100
+}

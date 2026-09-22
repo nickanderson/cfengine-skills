@@ -1,0 +1,84 @@
+bundle agent motd
+# @brief Manage the message of the day (/etc/motd)
+#
+# The content is built from three independent variables, each of which can be
+# overridden from augments (def.json) without editing this policy:
+#
+#   default:def.motd_header   string  Headline shown at the top of the motd
+#   default:def.motd_body     slist   Body lines, rendered one per line
+#   default:def.motd_contact  string  Support contact shown in the footer
+#
+# Example def.json:
+#
+#   {
+#     "variables": {
+#       "motd_header": "ACME Production - authorized use only",
+#       "motd_body": [ "Patched weekly, Sundays 02:00 UTC.", "Tickets: https://jira.example.com" ],
+#       "motd_contact": "ops@example.com"
+#     }
+#   }
+{
+  vars:
+      # 1. Header ---------------------------------------------------------
+      "header"
+        string => "$(default:def.motd_header)",
+        if     => isvariable("default:def.motd_header"),
+        comment => "Use the header supplied by augments";
+
+      "header"
+        string => "Welcome to $(sys.fqhost) ($(sys.flavour) $(sys.arch))",
+        if     => not(isvariable("default:def.motd_header")),
+        comment => "Fall back to a generated header";
+
+      # 2. Body -----------------------------------------------------------
+      "body"
+        slist  => { @(default:def.motd_body) },
+        if     => isvariable("default:def.motd_body"),
+        comment => "Use the body lines supplied by augments";
+
+      "body"
+        slist  => { "This system is managed by CFEngine.",
+                    "Local changes may be reverted automatically." },
+        if     => not(isvariable("default:def.motd_body")),
+        comment => "Fall back to a generic body";
+
+      # 3. Contact --------------------------------------------------------
+      "contact"
+        string => "$(default:def.motd_contact)",
+        if     => isvariable("default:def.motd_contact"),
+        comment => "Use the contact address supplied by augments";
+
+      "contact"
+        string => "root@$(sys.fqhost)",
+        if     => not(isvariable("default:def.motd_contact")),
+        comment => "Fall back to the local root alias";
+
+      # Render the three variables into the template data -----------------
+      "template_data"
+        data => mergedata('{ "header": "$(header)", "contact": "$(contact)", "body": body }');
+
+      "template"
+        string => "$(this.promise_dirname)/templates/motd.mustache";
+
+      "motd_file"
+        string => "/etc/motd";
+
+  files:
+      "$(motd_file)"
+        create        => "true",
+        template_method => "mustache",
+        edit_template => "$(template)",
+        template_data => @(template_data),
+        perms         => mog("0644", "root", "root"),
+        classes       => results("bundle", "motd_file"),
+        comment       => "The motd is the first thing an operator sees; it must identify the host and who to contact about it.";
+
+  reports:
+    motd_file_repaired::
+      "$(this.bundle): updated $(motd_file)";
+
+    inform_mode::
+      "$(this.bundle): header  = '$(header)'";
+      "$(this.bundle): body    = '$(body)'";
+      "$(this.bundle): contact = '$(contact)'";
+}

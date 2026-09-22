@@ -1,0 +1,161 @@
+{
+  "variant": "with-skill",
+  "run": 5,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 108349,
+    "duration_api_ms": 104556,
+    "num_turns": 12,
+    "total_cost_usd": 0.5703635,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "case": "01-motd",
+  "case_title": "MOTD with 3 augments-tunable variables",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "promises.cf",
+      "motd.cf"
+    ],
+    "augments_files": [
+      "def.json"
+    ],
+    "sources": {
+      "policy": "workdir",
+      "augments": "workdir"
+    },
+    "policy_bytes": 4433
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": true,
+    "standalone": [
+      {
+        "file": "promises.cf",
+        "rc": 0,
+        "output": "",
+        "bundlesequence": null
+      }
+    ],
+    "stdlib_retried": false,
+    "stdlib_ok": null,
+    "stdlib": [],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [
+      "class",
+      "fqhost",
+      "ipv4",
+      "libdir"
+    ],
+    "unknown": [],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [
+      "def.motd_file",
+      "def.motd_message",
+      "def.motd_organization",
+      "def.motd_support_contact"
+    ],
+    "tunables": [
+      "def.motd_file",
+      "def.motd_message",
+      "def.motd_organization",
+      "def.motd_support_contact"
+    ],
+    "instrumented": [
+      "def.motd_file",
+      "def.motd_message",
+      "def.motd_organization",
+      "def.motd_support_contact"
+    ],
+    "fully_qualified": [],
+    "augments_files": [
+      "def.json"
+    ],
+    "augments_keys": [
+      "default:def.motd_message",
+      "default:def.motd_organization",
+      "default:def.motd_support_contact"
+    ],
+    "matched_keys": [
+      "default:def.motd_message",
+      "default:def.motd_organization",
+      "default:def.motd_support_contact"
+    ],
+    "unmatched_tunables": [
+      "default:def.motd_file"
+    ]
+  },
+  "functional": {
+    "ran": true,
+    "status": "ok",
+    "overridden": [
+      "motd_file",
+      "motd_message",
+      "motd_organization",
+      "motd_support_contact"
+    ],
+    "not_overridden": [],
+    "log": "   error: No template data for the promise 'CFEVALSENTINEL_motd_file'\n   error: Errors encountered when actuating files promise 'CFEVALSENTINEL_motd_file'\n warning: Need to repair reports promise: Failed to update CFEVALSENTINEL_motd_file\ndefault:def.motd_file                    CFEVALSENTINEL_motd_file                                     source=augments_file                                                             \ndefault:def.motd_message                 CFEVALSENTINEL_motd_message                                  source=augments_file                                                             \ndefault:def.motd_organization            CFEVALSENTINEL_motd_organization                             source=augments_file                                                             \ndefault:def.motd_support_contact         CFEVALSENTINEL_motd_support_contact                          source=augments_file                                                             \ndefault:motd.file                        CFEVALSENTINEL_motd_file                                     source=promise                                                                   \ndefault:motd.message                     CFEVALSENTINEL_motd_message                                  source=promise                           Site specific notice rendered below the host details\ndefault:motd.organization                CFEVALSENTINEL_motd_organization                             source=promise                           Organization this host belongs to       \ndefault:motd.support_contact             CFEVALSENTINEL_motd_support_contact                          source=promise                           Support address or phone number printed in the banner"
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 25,
+      "earned": 25,
+      "detail": "cf-promises -cf clean"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 10,
+      "earned": 10,
+      "detail": "clean (4 referenced)"
+    },
+    {
+      "id": "tunable_count",
+      "label": "3 augments tunables present",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "4 found"
+    },
+    {
+      "id": "isvariable_pattern",
+      "label": "ifelse(isvariable(...)) instrumentation",
+      "weight": 20,
+      "earned": 20.0,
+      "detail": "4 of 4 tunables wrapped in ifelse()"
+    },
+    {
+      "id": "qualified_refs",
+      "label": "Tunables namespaced consistently",
+      "weight": 10,
+      "earned": 10,
+      "detail": "all bare def."
+    },
+    {
+      "id": "augments_example",
+      "label": "def.json augments example provided",
+      "weight": 10,
+      "earned": 10,
+      "detail": "def.json"
+    },
+    {
+      "id": "augments_keys_match",
+      "label": "def.json keys match policy tunables",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "3 matched"
+    }
+  ],
+  "score": 100.0,
+  "max_score": 100
+}

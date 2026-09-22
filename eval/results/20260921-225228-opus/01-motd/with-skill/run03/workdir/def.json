@@ -1,0 +1,19 @@
+{
+  "variables": {
+    "motd_organization": {
+      "value": "Northern.tech",
+      "comment": "Organization that owns hosts managed by this policy set",
+      "tags": [ "motd" ]
+    },
+    "motd_legal_notice": {
+      "value": "Authorized use only. All activity on this system is logged and may be reviewed.",
+      "comment": "Access notice presented at login",
+      "tags": [ "motd" ]
+    },
+    "motd_support_contact": {
+      "value": "admin@example.com",
+      "comment": "Contact for questions or incidents relating to this host",
+      "tags": [ "motd" ]
+    }
+  }
+}

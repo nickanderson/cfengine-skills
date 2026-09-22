@@ -1,0 +1,48 @@
+bundle agent motd
+{
+  vars:
+      # Tunable via augments -- organization name
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                         "$(def.motd_organization)",
+                         "Your Organization");
+
+      # Tunable via augments -- support contact
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                         "$(def.motd_support_contact)",
+                         "support@example.com");
+
+      # Tunable via augments -- custom message
+      "custom_message"
+        string => ifelse(isvariable("def.motd_custom_message"),
+                         "$(def.motd_custom_message)",
+                         "");
+
+      # Generate the MOTD content
+      "content"
+        string => format("%s%s%s%s%s%s",
+                  "=====================================================$(const.n)",
+                  "  Welcome to $(organization)$(const.n)",
+                  "=====================================================$(const.n)",
+                  "$(const.n)",
+                  ifelse("custom_message", format("$(custom_message)$(const.n)$(const.n)", ""),
+                         ""),
+                  format("For support, contact: $(support_contact)$(const.n)"));
+
+  files:
+      "/etc/motd"
+        create        => "true",
+        edit_line     => insert_lines("$(motd.content)"),
+        perms         => mog("644", "root", "root"),
+        classes       => results("bundle", "motd_updated");
+
+  reports:
+    motd_updated_ok::
+      "Message of the day updated successfully"
+        handle => "motd_report_success";
+
+    motd_updated_failed::
+      "Failed to update message of the day"
+        handle => "motd_report_failure";
+}

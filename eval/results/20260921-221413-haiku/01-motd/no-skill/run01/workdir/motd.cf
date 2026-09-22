@@ -1,0 +1,49 @@
+bundle agent motd
+{
+  meta:
+    "description" string => "Manage the message of the day (MOTD)";
+    "version" string => "1.0";
+
+  classes:
+    "motd_enabled" expression => "${def.motd_enabled}";
+
+  files:
+    motd_enabled::
+      "${def.motd_file}"
+        create        => "true",
+        edit_defaults => motd_empty_backup,
+        edit_line     => motd_content,
+        perms         => motd_perms;
+
+  reports:
+    motd_enabled::
+      "MOTD policy: Managing MOTD at ${def.motd_file}";
+
+    !motd_enabled::
+      "MOTD policy: MOTD management is disabled";
+}
+
+bundle edit_line motd_content
+{
+  delete_lines:
+    any::
+      ".*";
+
+  insert_lines:
+    any::
+      "${def.motd_message}";
+}
+
+body edit_defaults motd_empty_backup
+{
+  empty_file_before_editing => "true";
+  backup => "timestamp";
+  max_file_size => "100K";
+}
+
+body perms motd_perms
+{
+  mode  => "0644";
+  owners => { "root" };
+  groups => { "root" };
+}

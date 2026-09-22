@@ -1,0 +1,157 @@
+{
+  "variant": "no-skill",
+  "run": 4,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 272610,
+    "duration_api_ms": 263779,
+    "num_turns": 11,
+    "total_cost_usd": 1.0004330000000001,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "case": "01-motd",
+  "case_title": "MOTD with 3 augments-tunable variables",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "motd.cf",
+      "standalone.cf"
+    ],
+    "augments_files": [
+      "def.json"
+    ],
+    "sources": {
+      "policy": "workdir",
+      "augments": "workdir"
+    },
+    "policy_bytes": 4587
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": false,
+    "standalone": [
+      {
+        "file": "motd.cf",
+        "rc": 1,
+        "output": "error: Bundle 'main' listed in the bundlesequence is not a defined bundle\n   error: Fatal CFEngine error: Errors in promise bundles: could not verify bundlesequence",
+        "bundlesequence": null
+      },
+      {
+        "file": "standalone.cf",
+        "rc": 0,
+        "output": "",
+        "bundlesequence": null
+      }
+    ],
+    "stdlib_retried": false,
+    "stdlib_ok": null,
+    "stdlib": [],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [
+      "fqhost",
+      "libdir",
+      "policy_entry_dirname",
+      "uqhost"
+    ],
+    "unknown": [],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [
+      "def.motd_banner",
+      "def.motd_contact",
+      "def.motd_message"
+    ],
+    "tunables": [
+      "def.motd_banner",
+      "def.motd_contact",
+      "def.motd_message"
+    ],
+    "instrumented": [],
+    "fully_qualified": [],
+    "augments_files": [
+      "def.json"
+    ],
+    "augments_keys": [
+      "default:def.motd_banner",
+      "default:def.motd_contact",
+      "default:def.motd_message"
+    ],
+    "matched_keys": [
+      "default:def.motd_banner",
+      "default:def.motd_contact",
+      "default:def.motd_message"
+    ],
+    "unmatched_tunables": []
+  },
+  "functional": {
+    "ran": true,
+    "status": "ok",
+    "overridden": [
+      "motd_banner",
+      "motd_contact",
+      "motd_message"
+    ],
+    "not_overridden": [],
+    "log": "default:def.motd_banner                  CFEVALSENTINEL_motd_banner                                   source=augments_file                                                             \ndefault:def.motd_contact                 CFEVALSENTINEL_motd_contact                                  source=augments_file                                                             \ndefault:def.motd_message                 CFEVALSENTINEL_motd_message                                  source=augments_file                                                             "
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 25,
+      "earned": 0,
+      "detail": "error: Bundle 'main' listed in the bundlesequence is not a defined bundle"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 10,
+      "earned": 10,
+      "detail": "clean (4 referenced)"
+    },
+    {
+      "id": "tunable_count",
+      "label": "3 augments tunables present",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "3 found"
+    },
+    {
+      "id": "isvariable_pattern",
+      "label": "ifelse(isvariable(...)) instrumentation",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 3 tunables wrapped in ifelse()"
+    },
+    {
+      "id": "qualified_refs",
+      "label": "Tunables namespaced consistently",
+      "weight": 10,
+      "earned": 10,
+      "detail": "all bare def."
+    },
+    {
+      "id": "augments_example",
+      "label": "def.json augments example provided",
+      "weight": 10,
+      "earned": 10,
+      "detail": "def.json"
+    },
+    {
+      "id": "augments_keys_match",
+      "label": "def.json keys match policy tunables",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "3 matched"
+    }
+  ],
+  "score": 55.0,
+  "max_score": 100
+}

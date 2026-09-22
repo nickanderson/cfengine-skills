@@ -1,0 +1,9 @@
+body common control
+{
+      bundlesequence => { "motd" };
+
+      inputs => {
+                  "$(sys.libdir)/stdlib.cf",
+                  "services/motd.cf",
+                };
+}

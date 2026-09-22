@@ -1,0 +1,22 @@
+{
+  "variables": {
+    "motd_organization": {
+      "value": "Northern.tech",
+      "comment": "Organization name shown at the top of the message of the day",
+      "tags": [ "motd" ]
+    },
+    "motd_contact": {
+      "value": "admin@example.com",
+      "comment": "Support contact shown in the message of the day",
+      "tags": [ "motd" ]
+    },
+    "motd_notices": {
+      "value": [
+        "Unauthorized use is prohibited and may be monitored.",
+        "This host is managed by CFEngine; open a ticket before changing it."
+      ],
+      "comment": "Extra notice lines appended to the message of the day",
+      "tags": [ "motd" ]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "variables": {
+    "default:def.motd_path": {
+      "value": "/etc/motd",
+      "comment": "Path to the file managed by bundle agent motd"
+    },
+    "default:def.motd_message": {
+      "value": "Welcome to this system!\nAuthorized users only. All activity may be monitored and reported.",
+      "comment": "Content written to the motd file, newline-separated"
+    },
+    "default:def.motd_mode": {
+      "value": "0644",
+      "comment": "Permission mode applied to the motd file"
+    }
+  }
+}

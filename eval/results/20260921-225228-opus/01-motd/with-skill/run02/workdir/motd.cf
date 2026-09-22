@@ -1,0 +1,108 @@
+bundle agent motd
+# @brief Manage the content of the message of the day (/etc/motd)
+#
+# Three independent settings drive the rendered content. Each one is tunable
+# from augments (def.json) and falls back to a sane default when it is not
+# defined there:
+#
+#   def.motd_organization -> string, organization name shown in the banner
+#   def.motd_contact      -> string, support contact shown in the banner
+#   def.motd_notices      -> slist,  extra notice lines appended to the banner
+{
+  vars:
+      # --- Tunable 1: organization name -----------------------------------
+      "_organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                         "$(def.motd_organization)",
+                         "Example Organization"),
+        comment => "Organization name displayed at the top of the motd";
+
+      # --- Tunable 2: support contact --------------------------------------
+      "_contact"
+        string => ifelse(isvariable("def.motd_contact"),
+                         "$(def.motd_contact)",
+                         "support@example.com"),
+        comment => "Where users should go for help with this host";
+
+      # --- Tunable 3: additional notice lines ------------------------------
+      # slist, so it is collected from def.json with an explicit default.
+      "_notices"
+        slist => { "Unauthorized use is prohibited and may be monitored." },
+        unless => isvariable("def.motd_notices"),
+        comment => "Default notices when none are supplied by augments";
+
+      "_notices"
+        slist => { @(def.motd_notices) },
+        if => isvariable("def.motd_notices"),
+        comment => "Notices supplied by augments";
+
+      # --- Rendering -------------------------------------------------------
+      "_file"
+        string => "/etc/motd",
+        comment => "Location of the message of the day";
+
+      "_notices_data"
+        data => mergedata(_notices),
+        comment => "The notice lines as a JSON array for the template";
+
+      "_template_data"
+        data => parsejson(format('{ "organization": "%s", "contact": "%s", "hostname": "%s", "os": "%s", "notices": %s }',
+                                 "$(_organization)",
+                                 "$(_contact)",
+                                 "$(sys.fqhost)",
+                                 "$(sys.flavor)",
+                                 storejson(_notices_data))),
+        comment => "Only the values the template needs, so datastate() is not used";
+
+      "_template"
+        string =>
+"###############################################################################
+  {{{organization}}}
+###############################################################################
+  Host    : {{{hostname}}}
+  System  : {{{os}}}
+  Support : {{{contact}}}
+{{#notices}}  Notice  : {{{.}}}
+{{/notices}}###############################################################################
+  This file is managed by CFEngine. Local edits will be reverted.
+###############################################################################
+",
+        comment => "Inline mustache template for the message of the day";
+
+  files:
+      "$(_file)"
+        create => "true",
+        perms => motd_mog("0644", "root", "root"),
+        edit_template_string => "$(_template)",
+        template_method => "inline_mustache",
+        template_data => @(_template_data),
+        classes => motd_results("bundle", "motd_content"),
+        comment => "Render the motd from the three tunable settings";
+
+  reports:
+    motd_content_repaired::
+      "Updated $(_file) for '$(_organization)'";
+
+    inform_mode.motd_content_kept::
+      "$(_file) is already correct for '$(_organization)'";
+}
+
+body perms motd_mog(mode, owner, group)
+# @brief Set mode, owner and group
+{
+      mode   => "$(mode)";
+      rxdirs => "false";
+      owners => { "$(owner)" };
+      groups => { "$(group)" };
+}
+
+body classes motd_results(scope, prefix)
+# @brief Define <prefix>_(reached|kept|repaired|failed|denied|timeout) classes
+{
+      scope => "$(scope)";
+      promise_kept     => { "$(prefix)_reached", "$(prefix)_kept" };
+      promise_repaired => { "$(prefix)_reached", "$(prefix)_repaired" };
+      repair_failed    => { "$(prefix)_reached", "$(prefix)_failed"  };
+      repair_denied    => { "$(prefix)_reached", "$(prefix)_denied"  };
+      repair_timeout   => { "$(prefix)_reached", "$(prefix)_timeout" };
+}

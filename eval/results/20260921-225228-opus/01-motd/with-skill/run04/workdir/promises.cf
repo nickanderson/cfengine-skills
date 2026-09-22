@@ -1,0 +1,10 @@
+body common control
+# @brief Standalone entry point for the motd policy
+{
+      bundlesequence => { "motd" };
+
+      inputs => {
+                  "$(sys.libdir)/stdlib.cf",
+                  "motd.cf",
+                };
+}

@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_organization": "Acme Corporation",
+    "motd_support_contact": "ops-team@acme.com",
+    "motd_custom_message": "Please ensure your workstation is locked when away from your desk."
+  }
+}

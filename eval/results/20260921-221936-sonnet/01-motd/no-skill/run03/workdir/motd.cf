@@ -1,0 +1,98 @@
+###############################################################################
+# motd.cf - Manage the message of the day (/etc/motd)
+#
+# Three independent variables control the rendered content. Each has a
+# built-in default but can be overridden per-host/per-group via augments
+# (def.json) without touching this policy file:
+#
+#   def.motd_message       - main greeting/banner text (top of the file)
+#   def.motd_show_sysinfo  - "true"/"false", whether to append a system
+#                             info block (hostname, OS, IP)
+#   def.motd_footer        - footer/contact line (bottom of the file)
+#
+# See def.json in this directory for an example override file. Augments
+# placed at the root of your masterfiles (as def.json, or merged in via
+# "augments =>" in body common control) are automatically available as
+# variables in the special "def" bundle, e.g. $(def.motd_message).
+###############################################################################
+
+body common control
+{
+      bundlesequence => { "motd" };
+}
+
+bundle agent motd
+{
+  vars:
+      "message"
+        string => ifelse(isvariable("def.motd_message"), "$(def.motd_message)",
+                          "Welcome to $(sys.fqhost)"),
+        comment => "Main MOTD greeting. Override via def.json: def.motd_message";
+
+      "show_sysinfo"
+        string => ifelse(isvariable("def.motd_show_sysinfo"), "$(def.motd_show_sysinfo)",
+                          "true"),
+        comment => "Whether to append a system info block ('true'/'false'). Override via def.json: def.motd_show_sysinfo";
+
+      "footer"
+        string => ifelse(isvariable("def.motd_footer"), "$(def.motd_footer)",
+                          "This system is managed by CFEngine."),
+        comment => "Footer line appended to the MOTD. Override via def.json: def.motd_footer";
+
+  classes:
+      "show_sysinfo_enabled"
+        expression => strcmp("$(show_sysinfo)", "true"),
+        comment => "True when the system info block should be rendered";
+
+  files:
+      "/etc/motd"
+        create        => "true",
+        edit_line     => motd_content,
+        edit_defaults => motd_reset,
+        classes       => motd_if_repaired("motd_updated"),
+        comment       => "Rebuild /etc/motd from the motd_message/motd_show_sysinfo/motd_footer variables";
+
+  reports:
+    "motd_updated"::
+      "$(this.bundle): /etc/motd was rebuilt on $(sys.fqhost)";
+}
+
+bundle edit_line motd_content
+{
+  insert_lines:
+      "$(motd.message)"
+        comment => "Main greeting";
+
+      ""
+        comment => "Blank line separator before optional system info block";
+
+      "System information:"
+        ifvarclass => "show_sysinfo_enabled",
+        comment    => "Header for the optional system info block";
+
+      "  Hostname: $(sys.fqhost)"
+        ifvarclass => "show_sysinfo_enabled";
+
+      "  Operating system: $(sys.flavor)"
+        ifvarclass => "show_sysinfo_enabled";
+
+      "  IP address: $(sys.ipv4)"
+        ifvarclass => "show_sysinfo_enabled";
+
+      ""
+        comment => "Blank line separator before footer";
+
+      "$(motd.footer)"
+        comment => "Footer line";
+}
+
+body edit_defaults motd_reset
+{
+      empty_file_before_editing => "true";
+      max_file_size             => "10k";
+}
+
+body classes motd_if_repaired(x)
+{
+      promise_repaired => { "$(x)" };
+}

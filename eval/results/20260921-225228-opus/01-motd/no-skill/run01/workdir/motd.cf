@@ -1,0 +1,122 @@
+bundle agent motd
+# @brief Manage the content of the message of the day
+#
+# The rendered file looks like this:
+#
+#     <banner>
+#
+#     <message line 1>
+#     <message line 2>
+#
+#     <footer>
+#
+# Each of the three components is independently configurable from augments
+# (def.json) by defining the associated variable in the `variables` key:
+#
+#     "variables": {
+#       "motd_banner":  "Property of ACME Inc.",
+#       "motd_message": [ "Line one.", "Line two." ],
+#       "motd_footer":  "Questions? admin@example.com"
+#     }
+#
+# Any variable that is *not* defined in augments falls back to the default
+# defined below, so the three settings are truly independent of each other.
+{
+  vars:
+
+    # -----------------------------------------------------------------
+    # 1/3 banner - the first line(s) of the motd
+    # -----------------------------------------------------------------
+
+      "banner"
+        string  => "Welcome to $(sys.fqhost)",
+        if      => not( isvariable( "default:def.motd_banner" ) ),
+        comment => "Default banner, used when the policy is not augmented";
+
+      "banner"
+        string  => "$(default:def.motd_banner)",
+        if      => isvariable( "default:def.motd_banner" ),
+        comment => "Banner as configured from augments (def.json)";
+
+    # -----------------------------------------------------------------
+    # 2/3 message - the body, one list entry per line
+    # -----------------------------------------------------------------
+
+      "message"
+        slist   => { "This system is managed by CFEngine $(sys.cf_version).",
+                     "Local changes may be reverted automatically." },
+        if      => not( isvariable( "default:def.motd_message" ) ),
+        comment => "Default message body, used when the policy is not augmented";
+
+      "message"
+        slist   => { @(default:def.motd_message) },
+        if      => isvariable( "default:def.motd_message" ),
+        comment => "Message body as configured from augments (def.json)";
+
+    # -----------------------------------------------------------------
+    # 3/3 footer - the last line(s) of the motd
+    # -----------------------------------------------------------------
+
+      "footer"
+        string  => "Report issues to root@$(sys.fqhost).",
+        if      => not( isvariable( "default:def.motd_footer" ) ),
+        comment => "Default footer, used when the policy is not augmented";
+
+      "footer"
+        string  => "$(default:def.motd_footer)",
+        if      => isvariable( "default:def.motd_footer" ),
+        comment => "Footer as configured from augments (def.json)";
+
+    # -----------------------------------------------------------------
+    # Rendering
+    # -----------------------------------------------------------------
+
+      "path"
+        string  => "/etc/motd",
+        comment => "Location of the message of the day";
+
+      "body"
+        string  => join( "$(const.n)", "message" ),
+        comment => "The message lines, one per line";
+
+      "content"
+        string  => "$(banner)$(const.n)$(const.n)$(body)$(const.n)$(const.n)$(footer)$(const.n)",
+        comment => "Full, final content of the message of the day";
+
+  files:
+
+      "$(path)"
+        create        => "true",
+        content       => "$(content)",
+        perms         => motd_perms( "0644", "root", "root" ),
+        handle        => "motd_content",
+        comment       => "The message of the day informs users about the state
+                          and the acceptable use of the system, so it must hold
+                          exactly the content we have assembled.";
+
+  reports:
+
+    verbose_mode::
+      "$(this.bundle): rendering '$(path)'";
+      "$(this.bundle): banner = '$(banner)'";
+      "$(this.bundle): message = '$(message)'";
+      "$(this.bundle): footer = '$(footer)'";
+}
+
+body perms motd_perms(mode, user, group)
+# @brief Set mode, owner and group of a file
+# Equivalent to stdlib's `mog`, defined locally so that this policy file is
+# self contained and does not clash with the standard library.
+{
+        mode   => "$(mode)";
+        owners => { "$(user)" };
+        groups => { "$(group)" };
+        rxdirs => "false";
+}
+
+bundle agent __main__
+# @brief Allow this policy to be run directly: cf-agent -KIf ./motd.cf
+{
+  methods:
+      "motd";
+}

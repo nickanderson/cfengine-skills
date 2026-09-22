@@ -1,0 +1,11 @@
+{
+  "variables": {
+    "motd_header": "*** ACME Corp - Production - Authorized Use Only ***",
+    "motd_body": [
+      "Host $(sys.fqhost) is managed by CFEngine; local edits may be reverted.",
+      "Patch window: Sundays 02:00-04:00 UTC.",
+      "All sessions are logged."
+    ],
+    "motd_contact": "ops@example.com"
+  }
+}

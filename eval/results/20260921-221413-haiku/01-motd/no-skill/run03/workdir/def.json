@@ -1,0 +1,7 @@
+{
+  "motd_settings": {
+    "enable": "true",
+    "motd_file": "/etc/motd",
+    "motd_content": "Welcome to $(sys.hostname)\n\nThis is a production system.\nUnauthorized access is strictly prohibited.\n\nFor support, contact: admin@example.com\n"
+  }
+}

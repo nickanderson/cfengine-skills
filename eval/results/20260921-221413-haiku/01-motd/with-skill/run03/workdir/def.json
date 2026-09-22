@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_enabled": "true",
+    "motd_file_path": "/etc/motd",
+    "motd_content": "Welcome to our system\n\nFor support, please contact: ops@example.com\n"
+  }
+}

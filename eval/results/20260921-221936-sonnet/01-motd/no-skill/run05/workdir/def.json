@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_message": "Welcome to the Example Corp infrastructure.",
+    "motd_show_sysinfo": "true",
+    "motd_footer": "All activity may be monitored and reported. Contact ops@example.com for support."
+  }
+}

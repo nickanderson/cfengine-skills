@@ -1,0 +1,13 @@
+##############################################################################
+#
+# promises.cf - Policy entry point for the MOTD example.
+#
+# def.json, adjacent to this file, is loaded automatically as augments.
+#
+##############################################################################
+
+body common control
+{
+      bundlesequence => { "motd" };
+      inputs         => { "motd.cf" };
+}

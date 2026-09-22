@@ -1,0 +1,12 @@
+# Policy entry point for the message of the day policy.
+#
+# Run standalone with:
+#   cf-agent -KIf ./promises.cf
+#
+# Settings are tunable from the adjacent def.json (augments).
+
+body common control
+{
+      bundlesequence => { "motd" };
+      inputs         => { "motd.cf" };
+}

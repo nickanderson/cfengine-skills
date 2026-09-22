@@ -1,0 +1,19 @@
+{
+  "variables": {
+    "motd_organization": {
+      "value": "Northern.tech",
+      "comment": "Organization name rendered in the MOTD banner",
+      "tags": [ "motd" ]
+    },
+    "motd_support_contact": {
+      "value": "admin@example.com or x4357",
+      "comment": "Where users should go for help",
+      "tags": [ "motd" ]
+    },
+    "motd_legal_notice": {
+      "value": "Authorized use only. All activity on this system may be monitored and recorded.",
+      "comment": "Legal / acceptable use notice rendered in the MOTD",
+      "tags": [ "motd" ]
+    }
+  }
+}

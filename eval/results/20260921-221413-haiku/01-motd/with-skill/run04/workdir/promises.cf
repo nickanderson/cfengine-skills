@@ -1,0 +1,14 @@
+body file control
+{
+  inputs => {
+    "$(sys.libdir)/stdlib.cf",
+    "motd.cf"
+  };
+}
+
+bundle agent main
+{
+  methods:
+    any::
+      "motd" usebundle => motd();
+}

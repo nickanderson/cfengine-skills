@@ -1,0 +1,16 @@
+{
+  "variables": {
+    "motd_enabled": {
+      "value": true,
+      "comment": "Enable or disable MOTD management"
+    },
+    "motd_message": {
+      "value": "Welcome to the system!\nPlease use responsibly.\n",
+      "comment": "Content to be displayed in the MOTD file"
+    },
+    "motd_file": {
+      "value": "/etc/motd",
+      "comment": "Path to the MOTD file"
+    }
+  }
+}

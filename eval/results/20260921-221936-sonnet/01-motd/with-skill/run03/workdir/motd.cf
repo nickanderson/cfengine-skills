@@ -1,0 +1,70 @@
+# Manages the contents of /etc/motd.
+#
+# Three independent variables control the rendered message, each overridable
+# via augments (def.json) without editing this policy:
+#
+#   def.motd_organization  -- organization name shown in the banner
+#   def.motd_contact       -- support contact shown in the banner
+#   def.motd_notice        -- legal / usage notice shown in the banner
+#
+# Example def.json:
+# {
+#   "vars": {
+#     "motd_organization": "Northern.tech",
+#     "motd_contact": "admin@example.com",
+#     "motd_notice": "Unauthorized access is prohibited and will be logged."
+#   }
+# }
+
+bundle agent motd
+{
+  vars:
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                          "$(def.motd_organization)",
+                          "Example Organization"),
+        comment => "Tunable via augments: def.motd_organization";
+
+      "contact"
+        string => ifelse(isvariable("def.motd_contact"),
+                          "$(def.motd_contact)",
+                          "support@example.org"),
+        comment => "Tunable via augments: def.motd_contact";
+
+      "notice"
+        string => ifelse(isvariable("def.motd_notice"),
+                          "$(def.motd_notice)",
+                          "Authorized uses only. All activity may be monitored and reported."),
+        comment => "Tunable via augments: def.motd_notice";
+
+      "motd_template"
+        string => "{{organization}}
+
+{{notice}}
+
+Support: {{contact}}
+";
+
+      "template_data"
+        data => parsejson('{
+            "organization": "$(motd.organization)",
+            "contact": "$(motd.contact)",
+            "notice": "$(motd.notice)"
+          }');
+
+  files:
+      "/etc/motd"
+        create => "true",
+        edit_template_string => "$(motd.motd_template)",
+        template_method => "inline_mustache",
+        template_data => @(motd.template_data),
+        perms => mo("644", "root"),
+        comment => "Render /etc/motd from the organization, contact and notice variables";
+}
+
+body perms mo(mode, owner)
+{
+      mode   => "$(mode)";
+      owners => { "$(owner)" };
+      rxdirs => "false";
+}

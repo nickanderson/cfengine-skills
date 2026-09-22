@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_enabled": "true",
+    "motd_file_path": "/etc/motd",
+    "motd_content": "===============================================\nWelcome to $(sys.hostname)\nManaged by CFEngine\n===============================================\n"
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_organization": "Acme Corporation",
+    "motd_support_contact": "ops-team@acme.com",
+    "motd_custom_message": "Unauthorized access is prohibited. All activities are logged and monitored."
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_organization": "Globex Corporation",
+    "motd_support_contact": "admin@example.com",
+    "motd_notice": "Unauthorized access to this system is prohibited and will be logged."
+  }
+}

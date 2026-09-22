@@ -1,0 +1,13 @@
+{
+  "variables": {
+    "motd_banner": "*** ACME production build host ***",
+
+    "motd_notices": [
+      "Unauthorized access is prohibited and is logged.",
+      "This host is managed by CFEngine, local changes may be reverted.",
+      "Scheduled maintenance window: Sundays 02:00-04:00 UTC."
+    ],
+
+    "motd_contact": "the platform team <ops@example.com>"
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "variant": "no-skill",
+  "run": 5,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 161895,
+    "duration_api_ms": 157174,
+    "num_turns": 16,
+    "total_cost_usd": 0.7600060000000001,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "case": "01-motd",
+  "case_title": "MOTD with 3 augments-tunable variables",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "motd.cf",
+      "promises.cf"
+    ],
+    "augments_files": [
+      "def.json"
+    ],
+    "sources": {
+      "policy": "workdir",
+      "augments": "workdir"
+    },
+    "policy_bytes": 3051
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": true,
+    "standalone": [
+      {
+        "file": "promises.cf",
+        "rc": 0,
+        "output": "",
+        "bundlesequence": null
+      }
+    ],
+    "stdlib_retried": false,
+    "stdlib_ok": null,
+    "stdlib": [],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [
+      "fqhost",
+      "libdir"
+    ],
+    "unknown": [],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [
+      "def.motd_banner",
+      "def.motd_contact",
+      "def.motd_legal"
+    ],
+    "tunables": [
+      "def.motd_banner",
+      "def.motd_contact",
+      "def.motd_legal"
+    ],
+    "instrumented": [],
+    "fully_qualified": [],
+    "augments_files": [
+      "def.json"
+    ],
+    "augments_keys": [
+      "default:def.motd_banner",
+      "default:def.motd_contact",
+      "default:def.motd_legal"
+    ],
+    "matched_keys": [
+      "default:def.motd_banner",
+      "default:def.motd_contact",
+      "default:def.motd_legal"
+    ],
+    "unmatched_tunables": []
+  },
+  "functional": {
+    "ran": true,
+    "status": "ok",
+    "overridden": [
+      "motd_banner",
+      "motd_contact",
+      "motd_legal"
+    ],
+    "not_overridden": [],
+    "log": " warning: Should update file '/etc/motd' with content 'CFEVALSENTINEL_motd_banner\nCFEVALSENTINEL_motd_contact\nCFEVALSENTINEL_motd_legal\ndefault:def.motd_banner                  CFEVALSENTINEL_motd_banner                                   source=augments_file                                                             \ndefault:def.motd_contact                 CFEVALSENTINEL_motd_contact                                  source=augments_file                                                             \ndefault:def.motd_legal                   CFEVALSENTINEL_motd_legal                                    source=augments_file                                                             \ndefault:motd.banner                      CFEVALSENTINEL_motd_banner                                   source=promise                                                                   \ndefault:motd.contact                     CFEVALSENTINEL_motd_contact                                  source=promise                                                                   \ndefault:motd.legal                       CFEVALSENTINEL_motd_legal                                    source=promise                                                                   "
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 25,
+      "earned": 25,
+      "detail": "cf-promises -cf clean"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 10,
+      "earned": 10,
+      "detail": "clean (2 referenced)"
+    },
+    {
+      "id": "tunable_count",
+      "label": "3 augments tunables present",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "3 found"
+    },
+    {
+      "id": "isvariable_pattern",
+      "label": "ifelse(isvariable(...)) instrumentation",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 3 tunables wrapped in ifelse()"
+    },
+    {
+      "id": "qualified_refs",
+      "label": "Tunables namespaced consistently",
+      "weight": 10,
+      "earned": 10,
+      "detail": "all bare def."
+    },
+    {
+      "id": "augments_example",
+      "label": "def.json augments example provided",
+      "weight": 10,
+      "earned": 10,
+      "detail": "def.json"
+    },
+    {
+      "id": "augments_keys_match",
+      "label": "def.json keys match policy tunables",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "3 matched"
+    }
+  ],
+  "score": 80.0,
+  "max_score": 100
+}

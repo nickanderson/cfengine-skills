@@ -1,0 +1,14 @@
+{
+  "classes": {
+    "any": [
+      "inventory_cmdb"
+    ]
+  },
+  "vars": {
+    "manage_motd": {
+      "motd_enabled": "true",
+      "motd_file": "/etc/motd",
+      "motd_content": "========================================\nProduction System - Authorized Use Only\n========================================\n\nUnauthorized access is prohibited.\nAll activity is monitored and logged.\n\nFor support, contact: admin@example.com"
+    }
+  }
+}

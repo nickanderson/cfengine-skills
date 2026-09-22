@@ -1,0 +1,51 @@
+# Manages /etc/motd content.
+#
+# Three tunables, each overridable via augments (def.json):
+#   def.motd_organization     -- organization/site name shown in the banner
+#   def.motd_support_contact  -- contact info for support/helpdesk
+#   def.motd_notice           -- free-form notice/legal text appended to the banner
+
+bundle agent motd
+{
+  vars:
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                          "$(def.motd_organization)",
+                          "Example Corp"),
+        comment => "Tunable via augments key motd_organization";
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                          "$(def.motd_support_contact)",
+                          "support@example.com"),
+        comment => "Tunable via augments key motd_support_contact";
+
+      "notice"
+        string => ifelse(isvariable("def.motd_notice"),
+                          "$(def.motd_notice)",
+                          "Unauthorized access to this system is prohibited."),
+        comment => "Tunable via augments key motd_notice";
+
+      "path"
+        string => "/etc/motd";
+
+      "content"
+        string => "Welcome to $(motd.organization)
+Managed by CFEngine -- for support, contact $(motd.support_contact)
+
+$(motd.notice)
+";
+
+  files:
+      "$(motd.path)"
+        create        => "true",
+        content       => "$(motd.content)",
+        perms         => motd_perms("644", "root");
+}
+
+body perms motd_perms(mode, owner)
+{
+      mode   => "$(mode)";
+      owners => { "$(owner)" };
+      rxdirs => "false";
+}

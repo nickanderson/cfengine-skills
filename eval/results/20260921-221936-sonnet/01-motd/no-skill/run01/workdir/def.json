@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "default:motd.message": "Welcome to ACME Corp.\nUnauthorized access to this system is prohibited.",
+    "default:motd.path": "/etc/motd",
+    "default:motd.mode": "0644"
+  }
+}

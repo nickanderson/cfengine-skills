@@ -1,0 +1,87 @@
+# Manage the contents, location and permissions of the message-of-the-day
+# file.
+#
+# Three variables control this policy, all overridable via augments
+# (def.json) without editing this file:
+#
+#   default:motd.message  - text written into the MOTD file (may span
+#                            multiple lines using literal "\n")
+#   default:motd.path     - path to the MOTD file to manage
+#   default:motd.mode     - permission mode applied to the MOTD file
+#
+# Example def.json:
+# {
+#   "vars": {
+#     "default:motd.message": "Welcome to ACME Corp.\nAuthorized use only.",
+#     "default:motd.path": "/etc/motd",
+#     "default:motd.mode": "0644"
+#   }
+# }
+
+bundle agent motd
+{
+  vars:
+      # "unless => isvariable(...)" is evaluated in place while this
+      # promise is processed, so it correctly detects a value already
+      # installed by an augment (def.json is loaded before any promise
+      # evaluation begins) and skips setting the built-in default in
+      # that case. A plain, unconditional "vars" promise would instead
+      # unconditionally overwrite whatever the augment provided.
+      "message"
+        string => "This system is managed by CFEngine.",
+        unless  => isvariable("motd.message"),
+        comment => "Content written to the MOTD file; overridable via def.json";
+
+      "path"
+        string => "/etc/motd",
+        unless  => isvariable("motd.path"),
+        comment => "Location of the MOTD file; overridable via def.json";
+
+      "mode"
+        string => "0644",
+        unless  => isvariable("motd.mode"),
+        comment => "Permission mode of the MOTD file; overridable via def.json";
+
+  files:
+      "$(motd.path)"
+        create        => "true",
+        edit_line     => motd_content("$(motd.message)"),
+        edit_defaults => motd_edit_defaults,
+        perms         => motd_perms("$(motd.mode)"),
+        classes       => motd_results("motd"),
+        comment       => "Ensure the MOTD file matches the configured content, path and mode";
+
+  reports:
+    motd_repaired::
+      "$(this.bundle): $(motd.path) was updated";
+    motd_failed::
+      "$(this.bundle): failed to update $(motd.path)";
+}
+
+bundle edit_line motd_content(text)
+{
+  vars:
+      "as_list" slist => splitstring("$(text)", "\n", "1000");
+
+  insert_lines:
+      "$(as_list)";
+}
+
+body edit_defaults motd_edit_defaults
+{
+      empty_file_before_editing => "true";
+      edit_backup               => "false";
+}
+
+body perms motd_perms(mode)
+{
+      mode   => "$(mode)";
+      owners => { "root" };
+      groups => { "root" };
+}
+
+body classes motd_results(prefix)
+{
+      promise_repaired => { "$(prefix)_repaired" };
+      repair_failed     => { "$(prefix)_failed" };
+}

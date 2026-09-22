@@ -1,0 +1,9 @@
+{
+  "vars": {
+    "motd": {
+      "motd_file": "/etc/motd",
+      "motd_content": "Welcome to the system\nManaged by CFEngine\nPlease login responsibly",
+      "motd_enabled": "true"
+    }
+  }
+}

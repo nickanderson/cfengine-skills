@@ -1,0 +1,19 @@
+{
+  "variables": {
+    "motd_organization": {
+      "value": "Northern.tech",
+      "comment": "Organization name shown in /etc/motd",
+      "tags": ["motd"]
+    },
+    "motd_support_contact": {
+      "value": "admin@example.com",
+      "comment": "Support contact shown in /etc/motd",
+      "tags": ["motd"]
+    },
+    "motd_message": {
+      "value": "This system is managed by CFEngine. Unauthorized access is prohibited.",
+      "comment": "Notice text shown in /etc/motd",
+      "tags": ["motd"]
+    }
+  }
+}

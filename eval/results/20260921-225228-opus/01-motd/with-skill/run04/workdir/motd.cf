@@ -1,0 +1,81 @@
+bundle agent motd
+# @brief Manage the content of the message of the day (/etc/motd)
+#
+# Three independent, augments-tunable variables drive the rendered content:
+#
+#   def.motd_organization    - Organization name shown in the banner
+#   def.motd_support_contact - Who to contact for help with this host
+#   def.motd_access_policy   - Access/authorization statement
+#
+# Each falls back to a policy default when not defined by augments.
+{
+  vars:
+      # --- Tunables (override via def.json) -------------------------------
+      "organization"
+        string => ifelse(isvariable("def.motd_organization"),
+                         "$(def.motd_organization)",
+                         "Northern.tech"),
+        comment => "Organization name rendered in the MOTD banner";
+
+      "support_contact"
+        string => ifelse(isvariable("def.motd_support_contact"),
+                         "$(def.motd_support_contact)",
+                         "support@example.com"),
+        comment => "Contact address for assistance with this host";
+
+      "access_policy"
+        string => ifelse(isvariable("def.motd_access_policy"),
+                         "$(def.motd_access_policy)",
+                         "Authorized use only. All activity may be monitored and recorded."),
+        comment => "Access/authorization statement rendered in the MOTD";
+
+      # --- Where the MOTD lives ------------------------------------------
+      "motd_file"
+        string => ifelse(isvariable("def.motd_file"),
+                         "$(def.motd_file)",
+                         "/etc/motd"),
+        comment => "Path to the message of the day file";
+
+      # --- Template data --------------------------------------------------
+      # Only the values the template needs, so datastate() is never used.
+      "template_data"
+        data => parsejson('{
+                            "organization": "$(organization)",
+                            "support_contact": "$(support_contact)",
+                            "access_policy": "$(access_policy)",
+                            "fqhost": "$(sys.fqhost)",
+                            "os": "$(sys.flavor)"
+                          }');
+
+      "template"
+        string => concat(
+          "*****************************************************************$(const.n)",
+          "  {{{organization}}} - {{{fqhost}}} ({{{os}}})$(const.n)",
+          "*****************************************************************$(const.n)",
+          "$(const.n)",
+          "  {{{access_policy}}}$(const.n)",
+          "$(const.n)",
+          "  Need help? Contact {{{support_contact}}}$(const.n)",
+          "$(const.n)",
+          "*****************************************************************$(const.n)"),
+        comment => "Inline mustache template for the MOTD body";
+
+  files:
+      "$(motd_file)"
+        create => "true",
+        perms => mog("0644", "root", "root"),
+        edit_template_string => "$(template)",
+        template_method => "inline_mustache",
+        template_data => @(template_data),
+        classes => results("bundle", "motd_content"),
+        comment => "Render the message of the day from the tunable values";
+
+  reports:
+    motd_content_repaired::
+      "$(this.bundle): Updated $(motd_file) for '$(organization)'";
+
+    DEBUG|DEBUG_motd::
+      "$(this.bundle): organization    = '$(organization)'";
+      "$(this.bundle): support_contact = '$(support_contact)'";
+      "$(this.bundle): access_policy   = '$(access_policy)'";
+}

@@ -1,0 +1,53 @@
+body common control
+{
+  bundlesequence => { "motd" };
+}
+
+bundle agent motd
+{
+  vars:
+      # Three independent variables, configurable via augments (def.json)
+
+      # 1. Enable/disable MOTD management
+      "enabled"
+        string => ifelse(isvariable("def.motd_enabled"),
+                         "$(def.motd_enabled)",
+                         "true");
+
+      # 2. MOTD file path
+      "file_path"
+        string => ifelse(isvariable("def.motd_file_path"),
+                         "$(def.motd_file_path)",
+                         "/etc/motd");
+
+      # 3. MOTD content
+      "content"
+        string => ifelse(isvariable("def.motd_content"),
+                         "$(def.motd_content)",
+                         "Welcome to the system$(const.n)");
+
+  classes:
+      "motd_enabled" expression => strcmp("$(enabled)", "true");
+
+  files:
+    motd_enabled::
+      "$(file_path)"
+        create => "true",
+        edit_line => insert_lines("$(motd.content)"),
+        perms => default_motd_perms,
+        comment => "Manage the message of the day file";
+
+  reports:
+    motd_enabled::
+      "MOTD management enabled; file: $(file_path)";
+
+    !motd_enabled::
+      "MOTD management disabled by configuration";
+}
+
+body perms default_motd_perms
+{
+  mode => "0644";
+  owners => { "root" };
+  groups => { "root" };
+}

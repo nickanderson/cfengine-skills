@@ -1,0 +1,120 @@
+##############################################################################
+#
+# motd.cf - Manage the Message Of The Day (/etc/motd)
+#
+# Three independent, augments-tunable variables drive the content:
+#
+#   def.motd_organization    - Organization name shown in the banner
+#   def.motd_support_contact - Where users should go for help
+#   def.motd_legal_notice    - Legal / acceptable use notice
+#
+# Each has a policy default, so the policy is complete on its own. Any of the
+# three can be overridden independently from def.json (or host_specific.json)
+# without touching this file.
+#
+##############################################################################
+
+bundle agent motd
+{
+  vars:
+
+      # --- Tunables -----------------------------------------------------
+      # Read from the def bundle when augments supplied a value, otherwise
+      # fall back to the default baked into policy.
+
+      "_organization"
+        string => ifelse( isvariable( "def.motd_organization" ),
+                          "$(def.motd_organization)",
+                          "Example Organization" ),
+        comment => "Organization name rendered in the MOTD banner";
+
+      "_support_contact"
+        string => ifelse( isvariable( "def.motd_support_contact" ),
+                          "$(def.motd_support_contact)",
+                          "support@example.com" ),
+        comment => "Support address or URL rendered in the MOTD";
+
+      "_legal_notice"
+        string => ifelse( isvariable( "def.motd_legal_notice" ),
+                          "$(def.motd_legal_notice)",
+                          "Unauthorized access is prohibited. All activity may be monitored and recorded." ),
+        comment => "Legal / acceptable use notice rendered in the MOTD";
+
+      # --- Template data -------------------------------------------------
+      # Built from a classic array so that values containing quotes, colons
+      # or other JSON-significant characters can not corrupt the container.
+
+      "_d[organization]"    string => "$(_organization)";
+      "_d[support_contact]" string => "$(_support_contact)";
+      "_d[legal_notice]"    string => "$(_legal_notice)";
+      "_d[fqhost]"          string => "$(sys.fqhost)";
+      "_d[os]"              string => "$(sys.flavor)";
+      "_d[arch]"            string => "$(sys.arch)";
+
+      "_template_data"
+        data => mergedata( "_d" ),
+        comment => "Only the values the template needs, so that the implicit
+                    and expensive datastate() is never used";
+
+      "_template"
+        string => concat( "$(const.n)",
+                          "  $(_organization)$(const.n)",
+                          "$(const.n)",
+                          "  Host    : {{{fqhost}}} ({{{os}}} {{{arch}}})$(const.n)",
+                          "  Support : {{{support_contact}}}$(const.n)",
+                          "$(const.n)",
+                          "  {{{legal_notice}}}$(const.n)",
+                          "$(const.n)",
+                          "  This file is managed by CFEngine.$(const.n)",
+                          "  Local modifications will be reverted.$(const.n)",
+                          "$(const.n)" ),
+        comment => "Inline mustache template for the MOTD body";
+
+      # Inventory so the hub can report which banner a host is carrying.
+      "_inventory_organization"
+        string => "$(_organization)",
+        meta => { "inventory", "attribute_name=MOTD Organization" };
+
+  files:
+
+      "/etc/motd"
+        create               => "true",
+        template_method      => "inline_mustache",
+        edit_template_string => "$(_template)",
+        template_data        => @(_template_data),
+        perms                => motd_perms( "0644", "root", "root" ),
+        classes              => motd_results( "motd_file" ),
+        comment              => "The MOTD is rendered from the three tunables above";
+
+  reports:
+
+    motd_file_repaired::
+      "Updated /etc/motd for '$(_organization)'";
+
+    inform_mode::
+      "MOTD tunables: organization='$(_organization)' support='$(_support_contact)' legal='$(_legal_notice)'";
+}
+
+##############################################################################
+# Bodies (locally named so the policy is self contained and never collides
+# with the standard library).
+##############################################################################
+
+body perms motd_perms(mode, user, group)
+{
+      mode   => "$(mode)";
+      rxdirs => "false";
+      owners => { "$(user)" };
+      groups => { "$(group)" };
+}
+
+body classes motd_results(prefix)
+# Define namespace scoped outcome classes for the promise.
+{
+      promise_repaired => { "$(prefix)_repaired" };
+      repair_failed    => { "$(prefix)_failed" };
+      repair_denied    => { "$(prefix)_failed" };
+      repair_timeout   => { "$(prefix)_failed" };
+      promise_kept     => { "$(prefix)_kept" };
+      scope            => "namespace";
+}

@@ -1,0 +1,15 @@
+body common control
+# @brief Standalone entry so the example can be run directly:
+#        cf-agent --no-lock --inform --file ./promises.cf
+{
+      inputs => { "$(sys.libdir)/stdlib.cf", "motd.cf" };
+      bundlesequence => { "main" };
+}
+
+bundle agent main
+{
+  methods:
+
+      "motd"
+        usebundle => motd;
+}

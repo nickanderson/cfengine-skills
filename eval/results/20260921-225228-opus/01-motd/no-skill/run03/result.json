@@ -1,0 +1,155 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 173739,
+    "duration_api_ms": 168663,
+    "num_turns": 9,
+    "total_cost_usd": 0.6561195000000001,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "case": "01-motd",
+  "case_title": "MOTD with 3 augments-tunable variables",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "motd.cf",
+      "promises.cf"
+    ],
+    "augments_files": [
+      "def.json"
+    ],
+    "sources": {
+      "policy": "workdir",
+      "augments": "workdir"
+    },
+    "policy_bytes": 3261
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": true,
+    "standalone": [
+      {
+        "file": "promises.cf",
+        "rc": 0,
+        "output": "",
+        "bundlesequence": null
+      }
+    ],
+    "stdlib_retried": false,
+    "stdlib_ok": null,
+    "stdlib": [],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [
+      "arch",
+      "flavour",
+      "fqhost",
+      "libdir"
+    ],
+    "unknown": [],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [
+      "default:def.motd_body",
+      "default:def.motd_contact",
+      "default:def.motd_header"
+    ],
+    "tunables": [
+      "default:def.motd_body",
+      "default:def.motd_contact",
+      "default:def.motd_header"
+    ],
+    "instrumented": [],
+    "fully_qualified": [
+      "default:def.motd_body",
+      "default:def.motd_contact",
+      "default:def.motd_header"
+    ],
+    "augments_files": [
+      "def.json"
+    ],
+    "augments_keys": [
+      "default:def.motd_body",
+      "default:def.motd_contact",
+      "default:def.motd_header"
+    ],
+    "matched_keys": [
+      "default:def.motd_body",
+      "default:def.motd_contact",
+      "default:def.motd_header"
+    ],
+    "unmatched_tunables": []
+  },
+  "functional": {
+    "ran": true,
+    "status": "ok",
+    "overridden": [
+      "motd_body",
+      "motd_contact",
+      "motd_header"
+    ],
+    "not_overridden": [],
+    "log": " warning: '@(default:def.motd_body)' failed - variable is not list but string\n warning: '@(default:def.motd_body)' failed - variable is not list but string\n warning: '@(default:def.motd_body)' failed - variable is not list but string\n warning: '@(default:def.motd_body)' failed - variable is not list but string\n warning: '@(default:def.motd_body)' failed - variable is not list but string\n warning: '@(default:def.motd_body)' failed - variable is not list but string\n warning: '@(default:def.motd_body)' failed - variable is not list but string\n warning: '@(default:def.motd_body)' failed - variable is not list but string\ndefault:def.motd_body                    CFEVALSENTINEL_motd_body                                     source=augments_file                                                             \ndefault:def.motd_contact                 CFEVALSENTINEL_motd_contact                                  source=augments_file                                                             \ndefault:def.motd_header                  CFEVALSENTINEL_motd_header                                   source=augments_file                                                             \ndefault:motd.body                         {\"CFEVALSENTINEL_motd_body\"}                                source=promise                           Use the body lines supplied by augments \ndefault:motd.contact                     CFEVALSENTINEL_motd_contact                                  source=promise                           Use the contact address supplied by augments\ndefault:motd.header                      CFEVALSENTINEL_motd_header                                   source=promise                           Use the header supplied by augments     \ndefault:motd.template_data               {\"body\":[\"CFEVALSENTINEL_motd_body\"],\"contact\":\"CFEVALSENTINEL_motd_contact\",\"header\":\"CFEVALSENTINEL_motd_header\"} source=promise                                                                   "
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 25,
+      "earned": 25,
+      "detail": "cf-promises -cf clean"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 10,
+      "earned": 10,
+      "detail": "clean (4 referenced)"
+    },
+    {
+      "id": "tunable_count",
+      "label": "3 augments tunables present",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "3 found"
+    },
+    {
+      "id": "isvariable_pattern",
+      "label": "ifelse(isvariable(...)) instrumentation",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 3 tunables wrapped in ifelse()"
+    },
+    {
+      "id": "qualified_refs",
+      "label": "Tunables namespaced consistently",
+      "weight": 10,
+      "earned": 10,
+      "detail": "all fully qualified (default:def.)"
+    },
+    {
+      "id": "augments_example",
+      "label": "def.json augments example provided",
+      "weight": 10,
+      "earned": 10,
+      "detail": "def.json"
+    },
+    {
+      "id": "augments_keys_match",
+      "label": "def.json keys match policy tunables",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "3 matched"
+    }
+  ],
+  "score": 80.0,
+  "max_score": 100
+}

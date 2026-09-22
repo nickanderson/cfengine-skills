@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_file": "/etc/motd",
+    "motd_content": "Welcome to the system\nPlease be aware of our acceptable use policy",
+    "motd_enabled": "true"
+  }
+}

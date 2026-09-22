@@ -31,9 +31,9 @@ _HOST = socket.gethostname().split(".")[0]
 
 _EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 # RFC 2606/6761 reserve these, plus the stock fictional companies.
-_SAFE_DOMAINS = ("example.com", "example.org", "example.net", "example.edu",
-                 "acme.com", "globex.com", "localhost", ".invalid", ".test",
-                 ".local", ".localhost")
+_SAFE_DOMAINS = (".example", "example.com", "example.org", "example.net",
+                 "example.edu", "acme.com", "globex.com", "localhost",
+                 ".invalid", ".test", ".local", ".localhost")
 _PLACEHOLDER = "admin@example.com"
 
 _ALLOWED = set()

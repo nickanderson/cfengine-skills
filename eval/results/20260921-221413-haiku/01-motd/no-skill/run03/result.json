@@ -1,0 +1,126 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 27977,
+    "duration_api_ms": 28454,
+    "num_turns": 4,
+    "total_cost_usd": 0.045969699999999995,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "case": "01-motd",
+  "case_title": "MOTD with 3 augments-tunable variables",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "motd.cf"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "workdir",
+      "augments": "none"
+    },
+    "policy_bytes": 1806
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": false,
+    "standalone": [
+      {
+        "file": "motd.cf",
+        "rc": 1,
+        "output": "error: There are syntax errors in policy files\n./motd.cf:31:21: error: syntax error\n    \"description\" => \"Manage the system message of the day\";\n                    ^\n./motd.cf:31:21: error: Expected ';', got '=>'\n    \"description\" => \"Manage the system message of the day\";\n                    ^\n./motd.cf:31:61: warning: No action requested for meta promise with promiser 'Manage the system message of the day' in ./motd.cf:motd_policy close to line 31 [-Wsanity-check]\n    \"description\" => \"Manage the system message of the day\";\n                                                            ^\n./motd.cf:32:17: error: syntax error\n    \"version\" => \"1.0\";\n                ^\n./motd.cf:32:17: error: Expected ';', got '=>'\n    \"version\" => \"1.0\";\n                ^\n./motd.cf:32:17: warning: No action requested for meta promise with promiser 'Manage the system message of the day' in ./motd.cf:motd_policy close to line 31 [-Wsanity-check]\n    \"version\" => \"1.0\";\n                ^\n./motd.cf:32:24: warning: No action requested for meta promise with promiser '1.0' in ./motd.cf:motd_policy close to line 32 [-Wsanity-check]\n    \"version\" => \"1.0\";\n                       ^\n./motd.cf:61:10: error: Unknown attribute 'bundles' for 'body common control'\n  bundles => { \"motd_policy\" };\n         ^",
+        "bundlesequence": "motd_policy"
+      }
+    ],
+    "stdlib_retried": false,
+    "stdlib_ok": null,
+    "stdlib": [],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [
+      "hostname",
+      "libdir"
+    ],
+    "unknown": [
+      "hostname"
+    ],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [],
+    "tunables": [],
+    "instrumented": [],
+    "fully_qualified": [],
+    "augments_files": [],
+    "augments_keys": [],
+    "matched_keys": [],
+    "unmatched_tunables": []
+  },
+  "functional": {
+    "ran": false,
+    "status": "no tunables",
+    "overridden": [],
+    "not_overridden": [],
+    "log": ""
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 25,
+      "earned": 0,
+      "detail": "error: There are syntax errors in policy files"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 10,
+      "earned": 0,
+      "detail": "unknown: sys.hostname"
+    },
+    {
+      "id": "tunable_count",
+      "label": "3 augments tunables present",
+      "weight": 15,
+      "earned": 0.0,
+      "detail": "0 found"
+    },
+    {
+      "id": "isvariable_pattern",
+      "label": "ifelse(isvariable(...)) instrumentation",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "no isvariable() on def vars"
+    },
+    {
+      "id": "qualified_refs",
+      "label": "Tunables namespaced consistently",
+      "weight": 10,
+      "earned": 0,
+      "detail": "no tunables"
+    },
+    {
+      "id": "augments_example",
+      "label": "def.json augments example provided",
+      "weight": 10,
+      "earned": 0,
+      "detail": "none"
+    },
+    {
+      "id": "augments_keys_match",
+      "label": "def.json keys match policy tunables",
+      "weight": 10,
+      "earned": 0.0,
+      "detail": "0 matched"
+    }
+  ],
+  "score": 0.0,
+  "max_score": 100
+}

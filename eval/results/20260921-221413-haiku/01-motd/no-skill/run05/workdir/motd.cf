@@ -1,0 +1,45 @@
+bundle agent motd {
+  meta:
+    "description" => "Manage system message of the day (motd)";
+    "version" => "1.0";
+
+  vars:
+    "motd_file" string => "/etc/motd",
+      policy => "free";
+
+    "motd_content" string => "Welcome to the system",
+      policy => "free";
+
+    "motd_enabled" string => "true",
+      policy => "free";
+
+  classes:
+    "motd_managing" expression => strcmp(motd.motd_enabled, "true");
+
+  files:
+    motd_managing::
+      "$(motd.motd_file)"
+        create => "true",
+        edit_line => update_motd_content("$(motd.motd_content)"),
+        perms => m(644),
+        comment => "Ensure motd file exists with correct content";
+
+  reports:
+    motd_managing::
+      "MOTD management enabled"
+        report_to_file => "/var/log/cfengine_motd.log";
+      "Setting MOTD file: $(motd.motd_file)"
+        report_to_file => "/var/log/cfengine_motd.log";
+
+    !motd_managing::
+      "MOTD management is disabled"
+        report_to_file => "/var/log/cfengine_motd.log";
+}
+
+bundle edit_line update_motd_content(content) {
+  delete_lines:
+    ".*";
+
+  insert_lines:
+    "$(content)";
+}

@@ -1,0 +1,7 @@
+{
+  "variables": {
+    "default:def.motd_banner": "Welcome to $(sys.fqhost) - managed by CFEngine",
+    "default:def.motd_contact": "Owner: Operations Team <ops@example.com>",
+    "default:def.motd_legal": "This system is for authorized use only. All activity may be monitored and reported."
+  }
+}

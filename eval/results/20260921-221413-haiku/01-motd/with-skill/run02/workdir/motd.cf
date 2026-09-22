@@ -1,0 +1,53 @@
+body common control
+{
+  bundlesequence => { "motd" };
+}
+
+bundle agent motd
+{
+  vars:
+      # Tunable via augments (def.json) - Enable/disable MOTD management
+      "enabled"
+        string => ifelse(isvariable("def.motd_enabled"),
+                         "$(def.motd_enabled)",
+                         "true");
+
+      # Tunable via augments (def.json) - Path to the MOTD file
+      "path"
+        string => ifelse(isvariable("def.motd_path"),
+                         "$(def.motd_path)",
+                         "/etc/motd");
+
+      # Tunable via augments (def.json) - Content of the MOTD
+      "content"
+        string => ifelse(isvariable("def.motd_content"),
+                         "$(def.motd_content)",
+                         "Welcome to $(sys.hostname)$(const.n)");
+
+  reports:
+    "motd_enabled_false"::
+      "MOTD management is disabled";
+
+  files:
+    motd_enabled_true::
+      "$(path)"
+        create => "true",
+        edit_line => set_motd_content("$(motd.content)"),
+        perms => mog("644", "root", "root");
+}
+
+bundle edit_line set_motd_content(content)
+{
+  delete_lines:
+      ".*";
+
+  insert_lines:
+      "$(content)";
+}
+
+body perms mog(mode, user, group)
+{
+  mode => "$(mode)";
+  owners => { "$(user)" };
+  groups => { "$(group)" };
+}

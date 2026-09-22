@@ -1,0 +1,7 @@
+{
+  "vars": {
+    "motd_enabled": "true",
+    "motd_path": "/etc/motd",
+    "motd_content": "Welcome to $(sys.hostname)\n\nPlease note: Unauthorized access is prohibited.\n"
+  }
+}

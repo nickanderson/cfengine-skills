@@ -1,0 +1,44 @@
+bundle agent manage_motd
+{
+  vars:
+    # Load MOTD configuration from augments with defaults
+    "motd_file"    string => default(def.motd_file, "/etc/motd");
+    "motd_content" string => default(def.motd_content, "Welcome to the system");
+    "motd_enabled" string => default(def.motd_enabled, "true");
+
+  classes:
+    "motd_management_enabled" expression => strcmp(manage_motd.motd_enabled, "true");
+
+  files:
+    motd_management_enabled::
+      "$(motd_file)"
+        create        => "true",
+        edit_defaults => empty,
+        edit_line     => insert_motd_content,
+        perms         => motd_permissions,
+        comment       => "Manage system message of the day";
+
+  reports:
+    motd_management_enabled::
+      "MOTD policy: Managing MOTD at $(motd_file)"
+        comment => "Informational message about MOTD management",
+        inform  => "true";
+
+    !motd_management_enabled::
+      "MOTD policy: MOTD management is disabled"
+        comment => "MOTD management is not active",
+        inform  => "true";
+}
+
+bundle edit_line insert_motd_content
+{
+  insert_lines:
+    "$(manage_motd.motd_content)";
+}
+
+body perms motd_permissions
+{
+  mode => "0644";
+  owners => { "root" };
+  groups => { "root" };
+}

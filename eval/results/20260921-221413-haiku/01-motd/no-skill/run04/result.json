@@ -1,0 +1,138 @@
+{
+  "variant": "no-skill",
+  "run": 4,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 19703,
+    "duration_api_ms": 20129,
+    "num_turns": 5,
+    "total_cost_usd": 0.043174800000000006,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "case": "01-motd",
+  "case_title": "MOTD with 3 augments-tunable variables",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "motd.cf"
+    ],
+    "augments_files": [
+      "def-example-custom.json",
+      "def-example-disabled.json",
+      "def.json"
+    ],
+    "sources": {
+      "policy": "workdir",
+      "augments": "workdir"
+    },
+    "policy_bytes": 1113
+  },
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "validation": {
+    "attempted": true,
+    "standalone_ok": false,
+    "standalone": [
+      {
+        "file": "motd.cf",
+        "rc": 1,
+        "output": "./motd.cf:25:0: error: Undefined body mog with type perms",
+        "bundlesequence": "manage_motd"
+      }
+    ],
+    "stdlib_retried": true,
+    "stdlib_ok": true,
+    "stdlib": [
+      {
+        "file": "motd.cf",
+        "rc": 0,
+        "output": "",
+        "bundlesequence": "manage_motd"
+      }
+    ],
+    "stdlib_path": "/var/cfengine/masterfiles/lib/stdlib.cf"
+  },
+  "sys_vars": {
+    "referenced": [],
+    "unknown": [],
+    "known_count": 113
+  },
+  "patterns": {
+    "isvariable_refs": [],
+    "tunables": [],
+    "instrumented": [],
+    "fully_qualified": [],
+    "augments_files": [
+      "def-example-custom.json",
+      "def-example-disabled.json",
+      "def.json"
+    ],
+    "augments_keys": [
+      "default:def.manage_motd"
+    ],
+    "matched_keys": [],
+    "unmatched_tunables": []
+  },
+  "functional": {
+    "ran": false,
+    "status": "no tunables",
+    "overridden": [],
+    "not_overridden": [],
+    "log": ""
+  },
+  "checks": [
+    {
+      "id": "validate",
+      "label": "Policy passes cf-promises standalone",
+      "weight": 25,
+      "earned": 15.0,
+      "detail": "needed stdlib.cf to resolve undefined body/bundle"
+    },
+    {
+      "id": "sys_vars",
+      "label": "No hallucinated sys.* variables",
+      "weight": 10,
+      "earned": 10,
+      "detail": "clean (0 referenced)"
+    },
+    {
+      "id": "tunable_count",
+      "label": "3 augments tunables present",
+      "weight": 15,
+      "earned": 0.0,
+      "detail": "0 found"
+    },
+    {
+      "id": "isvariable_pattern",
+      "label": "ifelse(isvariable(...)) instrumentation",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "no isvariable() on def vars"
+    },
+    {
+      "id": "qualified_refs",
+      "label": "Tunables namespaced consistently",
+      "weight": 10,
+      "earned": 0,
+      "detail": "no tunables"
+    },
+    {
+      "id": "augments_example",
+      "label": "def.json augments example provided",
+      "weight": 10,
+      "earned": 10,
+      "detail": "def-example-custom.json, def-example-disabled.json, def.json"
+    },
+    {
+      "id": "augments_keys_match",
+      "label": "def.json keys match policy tunables",
+      "weight": 10,
+      "earned": 0.0,
+      "detail": "0 matched"
+    }
+  ],
+  "score": 35.0,
+  "max_score": 100
+}

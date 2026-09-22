@@ -24,3 +24,4 @@ results/latest-report.html
 
 # Atomic report generation leftovers
 results/.*.html.tmp
+results/index.html

@@ -1,0 +1,11 @@
+body common control
+# @brief Entry point for testing motd.cf on its own
+#
+#   cf-agent -KIf ./standalone.cf
+#
+# def.json in this same directory is picked up automatically because augments
+# are read from the directory of the policy entry file.
+{
+      bundlesequence => { "motd" };
+      inputs         => { "$(sys.policy_entry_dirname)/motd.cf" };
+}

@@ -1,0 +1,13 @@
+#############################################################################
+# promises.cf
+#
+# Entry point. Runs the motd bundle, which manages /etc/motd. Variables
+# controlling its content can be overridden via the augments file def.json
+# in this same directory, without editing any .cf file.
+#############################################################################
+
+body common control
+{
+      bundlesequence  => { "motd" };
+      inputs          => { "services/motd.cf" };
+}
