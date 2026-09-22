@@ -1,0 +1,102 @@
+body common control
+{
+      bundlesequence => { "main" };
+}
+
+bundle agent main
+{
+  vars:
+      "inv" data => readjson("$(this.promise_dirname)/inventory.json", "1M");
+
+      "service_idx" slist => getindices("inv[services]");
+
+      "raw_name[$(service_idx)]"
+        string => "$(inv[services][$(service_idx)][name])";
+
+      "canon_name[$(service_idx)]"
+        string => canonify(string_downcase("$(raw_name[$(service_idx)])"));
+
+      "only_if_expr[$(service_idx)]"
+        string => "$(inv[services][$(service_idx)][only_if])",
+        if => isvariable("inv[services][$(service_idx)][only_if]");
+
+      "only_if_expr[$(service_idx)]"
+        string => "any",
+        unless => isvariable("inv[services][$(service_idx)][only_if]");
+
+  classes:
+      # Normalize inventory casing (Nginx, NGINX, nginx, ...) down to one
+      # canonical lowercase class so bundles/only_if expressions match
+      # regardless of how the inventory team cased the service name.
+      "maintenance"
+        expression => "true",
+        if => strcmp("$(inv[maintenance])", "true");
+
+      "has_$(canon_name[$(service_idx)])"
+        expression => "true";
+
+      "should_run_$(canon_name[$(service_idx)])"
+        expression => "true",
+        ifvarclass => "!maintenance.($(only_if_expr[$(service_idx)]))";
+
+  methods:
+      "nginx"
+        usebundle => svc_nginx,
+        ifvarclass => "should_run_nginx";
+
+      "postgresql"
+        usebundle => svc_postgresql,
+        ifvarclass => "should_run_postgresql";
+
+      "node_exporter"
+        usebundle => svc_node_exporter,
+        ifvarclass => "should_run_node_exporter";
+
+      "log_shipper"
+        usebundle => svc_log_shipper,
+        ifvarclass => "should_run_log_shipper";
+
+      "backup_agent"
+        usebundle => svc_backup_agent,
+        ifvarclass => "should_run_backup_agent";
+
+      "redis"
+        usebundle => svc_redis,
+        ifvarclass => "should_run_redis";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: svc_redis";
+}

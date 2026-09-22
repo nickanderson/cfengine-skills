@@ -1,0 +1,145 @@
+Both files are in place and verified working with `cf-agent -K -f ./policy.cf`.
+
+## Answer
+
+No — CFEngine's class-expression grammar (the `.`/`|`/`!`/`()` boolean algebra evaluated by `expression =>`, `ifvarclass`, `only_if`, etc.) does plain string matching on class names. There is no case-insensitive mode for it, so `has_nginx` and `has_NGINX` can never be treated as the same class purely by how the expression is evaluated.
+
+The fix has to happen on the side that *creates* the class name: canonicalize the inventory's service name (lowercase, then `canonify()` to sanitize characters like `-`) before building `has_<service>`. Do that once, consistently, and `Nginx`, `nginx`, and `NGINX` all produce the same class, `has_nginx` — which is what the `only_if` expressions (already written lowercase by the inventory team) expect. I verified this fix against mixed-case input (`NGINX`, `PostgreSQL`, `rEdIs`) and all three normalized and matched their `only_if` correctly.
+
+## Policy
+
+`policy.cf`:
+```cfengine3
+#
+# Reads a per-host service inventory (JSON) and runs the bundle for each
+# listed service, provided:
+#   - the service's optional "only_if" class expression is true, and
+#   - the host is not flagged "maintenance".
+#
+# Casing note: CFEngine class-expression evaluation (the "." "|" "!" "()"
+# boolean algebra used by `expression =>`, `ifvarclass`, etc.) is plain
+# string matching on class names -- it has no case-insensitive mode. So
+# "Nginx", "nginx" and "NGINX" in the inventory can never be made to match
+# each other purely through how the expression is evaluated. Instead this
+# policy canonicalizes every inventory service name (lowercase + canonify)
+# before building the "has_<service>" class, so all three spellings always
+# produce the same class: has_nginx. The `only_if` expressions (written in
+# lowercase by the inventory team) then match reliably regardless of the
+# casing the inventory happened to export for any given host.
+#
+bundle agent g
+{
+  vars:
+      "inventory" data => readjson("$(this.promise_dirname)/inventory.json", 100000);
+      "svc_idx"   slist => getindices("inventory[services]");
+
+      # Map canonical (lowercased, canonified) service name -> bundle name.
+      # Only services listed here are ones this policy knows how to configure.
+      "svc_bundle[nginx]"         string => "svc_nginx";
+      "svc_bundle[postgresql]"    string => "svc_postgresql";
+      "svc_bundle[node_exporter]" string => "svc_node_exporter";
+      "svc_bundle[log_shipper]"   string => "svc_log_shipper";
+      "svc_bundle[backup_agent]"  string => "svc_backup_agent";
+      "svc_bundle[redis]"         string => "svc_redis";
+
+      # Canonicalized name per inventory entry, immune to source casing.
+      "svc_name[$(svc_idx)]"
+        string => canonify(string_downcase("$(inventory[services][$(svc_idx)][name])"));
+
+      # only_if defaults to "any" (always true) when the entry has none.
+      "svc_only_if[$(svc_idx)]"
+        string => "$(inventory[services][$(svc_idx)][only_if])",
+        if => isvariable("inventory[services][$(svc_idx)][only_if]");
+
+      "svc_only_if[$(svc_idx)]"
+        string => "any",
+        unless => isvariable("inventory[services][$(svc_idx)][only_if]");
+
+  classes:
+      # Maintenance flag from the inventory (JSON boolean -> "true"/"false").
+      "in_maintenance" expression => strcmp("$(inventory[maintenance])", "true");
+
+      # Every listed service gets its has_<service> class, canonical casing.
+      "has_$(svc_name[$(svc_idx)])" expression => "any";
+
+      # True once the entry's only_if is satisfied and we're not in maintenance.
+      # (Class names can't contain "[]", so the per-entry suffix is "_$(svc_idx)",
+      # not the "[$(svc_idx)]" array syntax used for variables above.)
+      "svc_ready_$(svc_idx)"
+        expression => "!in_maintenance.($(svc_only_if[$(svc_idx)]))";
+
+      # True only when we actually have a bundle mapped for this service.
+      "svc_known_$(svc_idx)"
+        expression => isvariable("svc_bundle[$(svc_name[$(svc_idx)])]");
+
+      "svc_run_$(svc_idx)"
+        expression => "svc_ready_$(svc_idx).svc_known_$(svc_idx)";
+
+  methods:
+      "configure service"
+        usebundle => "$(svc_bundle[$(svc_name[$(svc_idx)])])",
+        ifvarclass => "svc_run_$(svc_idx)";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: svc_redis";
+}
+
+body common control
+{
+      bundlesequence => { "g" };
+      inputs => { };
+}
+
+body file control
+{
+      namespace => "default";
+}
+```
+
+`inventory.json` (the sample data, read from `$(this.promise_dirname)/inventory.json`):
+```json
+{
+  "maintenance": false,
+  "services": [
+    { "name": "Nginx" },
+    { "name": "Node-Exporter", "only_if": "has_nginx|has_postgresql" },
+    { "name": "Log-Shipper",   "only_if": "(has_nginx|has_postgresql).(Monday|Tuesday|Wednesday|Thursday|Friday)" },
+    { "name": "Backup-Agent",  "only_if": "has_postgresql.(Saturday|Sunday)" }
+  ]
+}
+```
+
+Tested with `cf-agent -K -f ./policy.cf`: `svc_nginx`, `svc_node_exporter`, and `svc_log_shipper` (weekday) ran; `svc_backup_agent` correctly stayed off (no PostgreSQL in inventory). Also verified with mixed-case inputs (`NGINX`, `PostgreSQL`, `rEdIs`), maintenance mode suppressing everything, and an unrecognized service name being safely skipped.

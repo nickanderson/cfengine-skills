@@ -1,0 +1,9 @@
+{
+  "maintenance": false,
+  "services": [
+    { "name": "Nginx" },
+    { "name": "Node-Exporter", "only_if": "has_nginx|has_postgresql" },
+    { "name": "Log-Shipper",   "only_if": "(has_nginx|has_postgresql).(Monday|Tuesday|Wednesday|Thursday|Friday)" },
+    { "name": "Backup-Agent",  "only_if": "has_postgresql.(Saturday|Sunday)" }
+  ]
+}
