@@ -1,0 +1,245 @@
+{
+  "id": "02-class-casing",
+  "title": "Service bundles selected from inventory data, regardless of casing",
+  "prompt_file": "prompt.txt",
+  "grader": "casing",
+  "expect": {
+    "data_file": "inventory.json",
+    "marker": "CONFIGURED",
+    "variants": [
+      {
+        "label": "title case, nginx",
+        "data": {
+          "maintenance": false,
+          "services": [
+            {
+              "name": "Nginx"
+            },
+            {
+              "name": "Node-Exporter",
+              "only_if": "has_nginx|has_postgresql"
+            },
+            {
+              "name": "Log-Shipper",
+              "only_if": "(has_nginx|has_postgresql).(Monday|Tuesday|Wednesday|Thursday|Friday)"
+            },
+            {
+              "name": "Backup-Agent",
+              "only_if": "has_postgresql.(Saturday|Sunday)"
+            }
+          ]
+        },
+        "expect": {
+          "svc_nginx": true,
+          "svc_node_exporter": true,
+          "svc_log_shipper": "weekday"
+        }
+      },
+      {
+        "label": "lower case, nginx",
+        "data": {
+          "maintenance": false,
+          "services": [
+            {
+              "name": "nginx"
+            },
+            {
+              "name": "node-exporter",
+              "only_if": "has_nginx|has_postgresql"
+            },
+            {
+              "name": "log-shipper",
+              "only_if": "(has_nginx|has_postgresql).(Monday|Tuesday|Wednesday|Thursday|Friday)"
+            },
+            {
+              "name": "backup-agent",
+              "only_if": "has_postgresql.(Saturday|Sunday)"
+            }
+          ]
+        },
+        "expect": {
+          "svc_nginx": true,
+          "svc_node_exporter": true,
+          "svc_log_shipper": "weekday"
+        }
+      },
+      {
+        "label": "upper case, postgresql",
+        "data": {
+          "maintenance": false,
+          "services": [
+            {
+              "name": "POSTGRESQL"
+            },
+            {
+              "name": "NODE-EXPORTER",
+              "only_if": "has_nginx|has_postgresql"
+            },
+            {
+              "name": "LOG-SHIPPER",
+              "only_if": "(has_nginx|has_postgresql).(Monday|Tuesday|Wednesday|Thursday|Friday)"
+            },
+            {
+              "name": "BACKUP-AGENT",
+              "only_if": "has_postgresql.(Saturday|Sunday)"
+            }
+          ]
+        },
+        "expect": {
+          "svc_postgresql": true,
+          "svc_node_exporter": true,
+          "svc_log_shipper": "weekday",
+          "svc_backup_agent": "weekend"
+        }
+      },
+      {
+        "label": "mixed case, postgresql",
+        "data": {
+          "maintenance": false,
+          "services": [
+            {
+              "name": "PostgreSQL"
+            },
+            {
+              "name": "node-exporter",
+              "only_if": "has_nginx|has_postgresql"
+            },
+            {
+              "name": "LOG-shipper",
+              "only_if": "(has_nginx|has_postgresql).(Monday|Tuesday|Wednesday|Thursday|Friday)"
+            },
+            {
+              "name": "Backup-Agent",
+              "only_if": "has_postgresql.(Saturday|Sunday)"
+            }
+          ]
+        },
+        "expect": {
+          "svc_postgresql": true,
+          "svc_node_exporter": true,
+          "svc_log_shipper": "weekday",
+          "svc_backup_agent": "weekend"
+        }
+      },
+      {
+        "label": "no nginx or postgresql, so no only_if holds",
+        "data": {
+          "maintenance": false,
+          "services": [
+            {
+              "name": "Node-Exporter",
+              "only_if": "has_nginx|has_postgresql"
+            },
+            {
+              "name": "log-shipper",
+              "only_if": "(has_nginx|has_postgresql).(Monday|Tuesday|Wednesday|Thursday|Friday)"
+            },
+            {
+              "name": "BACKUP-AGENT",
+              "only_if": "has_postgresql.(Saturday|Sunday)"
+            }
+          ]
+        },
+        "expect": {}
+      },
+      {
+        "label": "node-exporter absent while its only_if would hold",
+        "data": {
+          "maintenance": false,
+          "services": [
+            {
+              "name": "NGINX"
+            },
+            {
+              "name": "postgresql"
+            },
+            {
+              "name": "Backup-Agent",
+              "only_if": "has_postgresql.(Saturday|Sunday)"
+            }
+          ]
+        },
+        "expect": {
+          "svc_nginx": true,
+          "svc_postgresql": true,
+          "svc_backup_agent": "weekend"
+        }
+      },
+      {
+        "label": "maintenance, with only_if that would hold",
+        "data": {
+          "maintenance": true,
+          "services": [
+            {
+              "name": "PostgreSQL"
+            },
+            {
+              "name": "nginx"
+            },
+            {
+              "name": "Node-Exporter",
+              "only_if": "has_nginx|has_postgresql"
+            },
+            {
+              "name": "Backup-Agent",
+              "only_if": "has_postgresql.(Saturday|Sunday)"
+            }
+          ]
+        },
+        "expect": {}
+      }
+    ],
+    "functional_checks": [
+      {
+        "id": "services_match",
+        "items": [
+          "svc_nginx",
+          "svc_postgresql"
+        ],
+        "mode": "correct",
+        "label": "Listed services run across casings (canonify + casing where tested)"
+      },
+      {
+        "id": "only_if_grouping",
+        "items": [
+          "svc_node_exporter"
+        ],
+        "mode": "correct",
+        "label": "only_if combined with the service class safely (grouping)",
+        "scoring": "all"
+      },
+      {
+        "id": "hard_classes_intact",
+        "items": [
+          "svc_log_shipper",
+          "svc_backup_agent"
+        ],
+        "mode": "correct",
+        "label": "Mixed-case hard classes (weekdays) still evaluate"
+      },
+      {
+        "id": "negative_control",
+        "items": [
+          "svc_redis",
+          "svc_nginx",
+          "svc_postgresql"
+        ],
+        "mode": "no_unexpected",
+        "gate": "any_applies",
+        "label": "Unlisted services never run"
+      }
+    ]
+  },
+  "weights": {
+    "validate": 15,
+    "sys_vars": 5,
+    "answers_question": 10,
+    "normalizes_case": 5,
+    "prefers_if": 5,
+    "services_match": 20,
+    "only_if_grouping": 15,
+    "hard_classes_intact": 15,
+    "negative_control": 10
+  },
+  "rubric_version": 3
+}
