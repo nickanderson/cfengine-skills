@@ -21,3 +21,6 @@ results/**/report.html
 results/compare.html
 results/timeline.html
 results/latest-report.html
+
+# Atomic report generation leftovers
+results/.*.html.tmp

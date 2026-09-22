@@ -31,6 +31,13 @@ OPEN_REPORT=1
 REPORT_ONLY=0
 FUNCTIONAL=0
 SAFE_PERMS=0
+# The with-skill side installs the skill into the jail's own skills directory so
+# Claude Code loads it for real -- executing its dynamic blocks, which is what
+# supplies the documentation paths. Handing over a raw SKILL.md via --add-dir
+# graded a file no real user is ever given.
+DOCS_DIR=${CFENGINE_DOCS_DIR:-$HOME/.local/share/cfengine/docs}
+DOCS_BRANCH=""
+DOCS_COMMIT=""
 declare -a CASES=()
 
 die() { echo "run-eval: $*" >&2; exit 1; }
@@ -133,6 +140,17 @@ else
 
   "$EVAL_DIR/bin/refresh-sys-vars.sh" "$SYS_VARS" "$IMAGE"
 
+  # --- what the installed skill will pull in ------------------------------
+  # Recorded for provenance: the skill's own script clones/updates this, and the
+  # docs revision is part of what the with-skill side was given.
+  if [ -d "$DOCS_DIR/.git" ]; then
+    DOCS_BRANCH=$(git -C "$DOCS_DIR" rev-parse --abbrev-ref HEAD 2>/dev/null || true)
+    DOCS_COMMIT=$(git -C "$DOCS_DIR" rev-parse HEAD 2>/dev/null || true)
+    echo "run-eval: docs $DOCS_BRANCH @ ${DOCS_COMMIT:0:8}"
+  else
+    echo "run-eval: no docs checkout yet; the skill will clone it on first load" >&2
+  fi
+
   # strip characters that would break the JSON literal below
   if [ -n "$IMAGE" ]; then
     CF_VERSION=$(podman run --rm "$IMAGE" cf-promises --version 2>/dev/null | head -1 | tr -d '"\\')
@@ -165,6 +183,11 @@ else
     "eval_commit": "$EVAL_COMMIT",
     "eval_dirty": $EVAL_DIRTY
   },
+  "skill_delivery": "installed",
+  "docs": {
+    "branch": "$DOCS_BRANCH",
+    "commit": "$DOCS_COMMIT"
+  },
   "skill": {
     "path": "cfengine-policy/SKILL.md",
     "commit": "$SKILL_COMMIT",
@@ -188,18 +211,28 @@ run_arm() {
   local jail
   jail=$(mktemp -d "${TMPDIR:-/tmp}/cfeval-${case_id}-${arm}.XXXXXXXX")
   mkdir -p "$jail/work" "$jail/config"
-  # Fresh CLAUDE_CONFIG_DIR: no user CLAUDE.md, no installed skills, no plugins,
-  # no project settings -- the only difference between arms is the skill itself.
+  # Fresh CLAUDE_CONFIG_DIR: no user CLAUDE.md, no pre-installed skills, no
+  # plugins, no project settings. The skill under test is installed into this
+  # directory below, so it is the only difference between the two sides.
   cp "$HOME/.claude/.credentials.json" "$jail/config/" 2>/dev/null || true
 
   local sysprompt
   sysprompt=$(cat "$EVAL_DIR/lib/base-system-prompt.txt")
-  local -a extra=()
   if [ "$arm" = with-skill ]; then
-    extra+=(--add-dir "$SKILL_DIR")
-    sysprompt="$sysprompt"$'\n'"$(sed "s|__SKILL_DIR__|$SKILL_DIR|g" "$EVAL_DIR/lib/skill-system-prompt.txt")"
+    # Install into the jail's skills directory, flat -- Claude Code discovers
+    # skills/<name>/SKILL.md and does not recurse, so a nested copy is invisible.
+    # Copied rather than symlinked into the repo: a symlink would let the model
+    # walk up into eval/results and read every other run's answer.
+    mkdir -p "$jail/config/skills"
+    cp -a "$SKILL_DIR" "$jail/config/skills/cfengine-policy"
+    # The skill resolves its helpers as ${CLAUDE_SKILL_DIR}/../scripts.
+    cp -a "$REPO_DIR/scripts" "$jail/config/skills/scripts"
+    sysprompt="$sysprompt"$'\n'"$(cat "$EVAL_DIR/lib/skill-system-prompt.txt")"
   fi
 
+  # --disable-slash-commands is deliberately absent: it also makes installed
+  # skills unavailable, which silently turned the with-skill side into a second
+  # baseline. A fresh config dir has no custom commands to guard against anyway.
   local -a perms=(--dangerously-skip-permissions)
   [ "$SAFE_PERMS" = 1 ] && perms=(--permission-mode acceptEdits --permission-prompts none)
 
@@ -212,21 +245,24 @@ run_arm() {
     printf '# its path is printed at the end so the artifacts can be inspected.\n'
     printf 'set -e\nHERE=$(cd "$(dirname "$0")" && pwd)\n'
     # repo-relative, so the reproduce script carries no absolute path:
-    # <repo>/eval/results/<ts>/<case>/<arm>/runNN -> six levels up
-    printf 'SKILL_DIR=$(cd "$HERE/../../../../../../cfengine-policy" && pwd)\n'
+    # <repo>/eval/results/<ts>/<case>/<side>/runNN -> six levels up
+    printf 'REPO=$(cd "$HERE/../../../../../.." && pwd)\n'
     printf 'JAIL=$(mktemp -d "${TMPDIR:-/tmp}/cfeval-replay.XXXXXXXX")\n'
     printf 'mkdir -p "$JAIL/work" "$JAIL/config"\n'
     printf 'cp "$HOME/.claude/.credentials.json" "$JAIL/config/" 2>/dev/null || true\n'
+    if [ "$arm" = with-skill ]; then
+      printf 'mkdir -p "$JAIL/config/skills"\n'
+      printf 'cp -a "$REPO/cfengine-policy" "$JAIL/config/skills/cfengine-policy"\n'
+      printf 'cp -a "$REPO/scripts" "$JAIL/config/skills/scripts"\n'
+      printf 'export CFENGINE_SKILL_UPDATE_DISABLE=1\n'
+    fi
     printf 'cd "$JAIL/work"\n'
     printf 'CLAUDE_CONFIG_DIR="$JAIL/config" claude \\\n'
     printf '  -p "$(cat \"$HERE/prompt.txt\")" \\\n'
     printf '  --model %s --output-format json \\\n' "$MODEL"
     printf '  --append-system-prompt "$(cat \"$HERE/system-prompt.txt\")" \\\n'
-    printf '  --disable-slash-commands --strict-mcp-config --no-session-persistence \\\n'
+    printf '  --strict-mcp-config --no-session-persistence \\\n'
     printf '  %s' "${perms[*]}"
-    if [ ${#extra[@]} -gt 0 ]; then
-      printf ' \\\n  --add-dir "$SKILL_DIR"'
-    fi
     printf '\necho "jail: $JAIL"\n'
   } > "$out/cmd.sh"
   chmod +x "$out/cmd.sh"
@@ -234,16 +270,15 @@ run_arm() {
 
   echo "  -> $case_id/$arm run$idx (jail: $jail)"
   local rc=0
-  ( cd "$jail/work" && CLAUDE_CONFIG_DIR="$jail/config" timeout "$TIMEOUT" claude \
+  ( cd "$jail/work" && CLAUDE_CONFIG_DIR="$jail/config" \
+      CFENGINE_SKILL_UPDATE_DISABLE=1 timeout "$TIMEOUT" claude \
       -p "$prompt" \
       --model "$MODEL" \
       --output-format json \
       --append-system-prompt "$sysprompt" \
-      --disable-slash-commands \
       --strict-mcp-config \
       --no-session-persistence \
-      "${perms[@]}" \
-      "${extra[@]}" ) > "$out/raw.json" 2> "$out/stderr.log" || rc=$?
+      "${perms[@]}" ) > "$out/raw.json" 2> "$out/stderr.log" || rc=$?
 
   SKILL_SHA_AFTER=$(sha256sum "$SKILL_MD" | cut -d' ' -f1)
 
@@ -320,16 +355,27 @@ ln -sfn "$(basename "$RUN_DIR")/report.html" "$EVAL_DIR/results/latest-report.ht
 # Cross-model view. The per-run report charts a single model; this puts every
 # model that has ever run these cases side by side. Non-fatal: a comparison
 # failure must not sink a run whose model calls have already been paid for.
-if ! python3 "$EVAL_DIR/bin/compare.py" --history "$HISTORY" \
-        --results-dir "$EVAL_DIR/results" --out "$EVAL_DIR/results/compare.html"; then
-  echo "eval: WARNING compare.html generation failed (results are intact)" >&2
+# Written to a temp file and moved into place only on success: a half-written
+# or stale page that still looks current is worse than an obviously missing one.
+if python3 "$EVAL_DIR/bin/compare.py" --history "$HISTORY" \
+        --results-dir "$EVAL_DIR/results" --out "$EVAL_DIR/results/.compare.html.tmp"; then
+  mv "$EVAL_DIR/results/.compare.html.tmp" "$EVAL_DIR/results/compare.html"
+else
+  rm -f "$EVAL_DIR/results/.compare.html.tmp"
+  echo "eval: WARNING compare.html generation failed; the existing page is from" >&2
+  echo "      an earlier run and is now out of date (results themselves are intact)" >&2
 fi
 
 # Full history, archived regimes included, so the arc survives a re-base.
 TL=(--history "$HISTORY")
 [ -f "$EVAL_DIR/archive/history.jsonl" ] && TL+=(--history "$EVAL_DIR/archive/history.jsonl")
-if ! python3 "$EVAL_DIR/bin/timeline.py" "${TL[@]}" --out "$EVAL_DIR/results/timeline.html"; then
-  echo "eval: WARNING timeline.html generation failed (results are intact)" >&2
+if python3 "$EVAL_DIR/bin/timeline.py" "${TL[@]}" \
+        --out "$EVAL_DIR/results/.timeline.html.tmp"; then
+  mv "$EVAL_DIR/results/.timeline.html.tmp" "$EVAL_DIR/results/timeline.html"
+else
+  rm -f "$EVAL_DIR/results/.timeline.html.tmp"
+  echo "eval: WARNING timeline.html generation failed; the existing page is from" >&2
+  echo "      an earlier run and is now out of date (results themselves are intact)" >&2
 fi
 
 echo "eval: report  -> $RUN_DIR/report.html"

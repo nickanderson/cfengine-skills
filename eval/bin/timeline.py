@@ -67,12 +67,17 @@ def ruler_of(info, rv=None):
         engine = "host" if info.get("host") or info.get("cfengine") else "unknown"
     engine = engine.split()[0]
     rv = rv if rv is not None else info.get("rubric_version")
-    return (rv if rv is not None else "?", engine)
+    # How the skill reached the model. Runs before this key existed handed over a
+    # raw SKILL.md with --add-dir, so its dynamic blocks never ran and the model
+    # never got the documentation paths -- a different thing to measure, not a
+    # better score on the same thing.
+    delivery = info.get("skill_delivery", "add-dir")
+    return (rv if rv is not None else "?", engine, delivery)
 
 
 def ruler_label(key):
-    rv, engine = key
-    return "rubric v%s &middot; %s" % (rv, e(engine))
+    rv, engine, delivery = key
+    return "rubric v%s &middot; %s &middot; skill %s" % (rv, e(engine), e(delivery))
 
 
 def facets(runs, info_by_run, by_run_arm, models, maxscore, rubrics):
@@ -235,7 +240,7 @@ def main():
                     'The thick pale bar behind a dot is the <b>spread across that run&rsquo;s '
                     'repetitions</b>, not movement between runs &mdash; an unaided arm routinely '
                     'varies by 70+ points from one repetition to the next. Shaded bands mark '
-                    '<b>ruler regimes</b>: a change of rubric, or of the engine the policy is '
+                    '<b>ruler regimes</b>: a change of rubric, of the engine the policy is '
                     'validated in, re-bases the score, so lines are deliberately broken at '
                     'every boundary. With only a run or two per model per regime there is not '
                     'much of a line yet &mdash; that fills in as runs accumulate.</p>')
@@ -248,7 +253,7 @@ def main():
     trows = []
     for rid in runs:
         info = info_by_run.get(rid, {})
-        rv, engine = ruler_of(info, rubrics.get(rid))
+        rv, engine, delivery = ruler_of(info, rubrics.get(rid))
         for m in models:
             pair = {a: by_run_arm.get((rid, m, a)) for a in ARMS}
             if not any(pair.values()):
@@ -269,13 +274,15 @@ def main():
             trows.append('<tr><td style="font-variant-numeric:tabular-nums">%s</td><td><b>%s</b></td>'
                          '<td class="num detail">%d</td>%s<td class="num">%s</td>'
                          '<td class="detail">v%s</td><td class="detail">%s</td>'
+                         '<td class="detail">%s</td>'
                          '<td class="detail"><code>%s</code></td></tr>'
-                         % (e(rid), e(m), n, cells, d, e(rv), e(engine), e(sk[:8] or "?")))
+                         % (e(rid), e(m), n, cells, d, e(rv), e(engine), e(delivery),
+                            e(sk[:8] or "?")))
     body.append('<details open><summary>Table view &mdash; every run, with the ruler it was '
                 'scored against</summary><table><thead><tr><th>Run</th><th>Model</th>'
                 '<th class="num">n</th><th class="num">No skill</th><th class="num">range</th>'
                 '<th class="num">With skill</th><th class="num">range</th><th class="num">Delta</th>'
-                '<th>Rubric</th><th>Engine</th><th>Skill</th></tr></thead><tbody>%s</tbody>'
+                '<th>Rubric</th><th>Engine</th><th>Delivery</th><th>Skill</th></tr></thead><tbody>%s</tbody>'
                 '</table></details>' % "".join(trows))
     body.append('</div>')
 

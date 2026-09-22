@@ -11,14 +11,19 @@ CFEngine policy.
 
 ## Install
 
-Clone into your Claude Code skills directory:
+Clone the repo, then link the skill into your Claude Code skills directory:
 
 ```bash
 git clone https://github.com/nickanderson/cfengine-skills-public.git \
-    ~/.claude/skills/cfengine-skills
+    ~/src/cfengine-skills
+ln -s ~/src/cfengine-skills/cfengine-policy ~/.claude/skills/cfengine-policy
 ```
 
 The skill will appear as `/cfengine-policy` in Claude Code.
+
+Claude Code looks for `~/.claude/skills/<name>/SKILL.md` and does not search
+further down, so cloning the repo *into* `~/.claude/skills/` leaves the skill
+one level too deep to be found. Link the skill directory itself, as above.
 
 ## What it does
 

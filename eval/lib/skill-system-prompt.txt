@@ -1,4 +1,3 @@
-A CFEngine policy reference is available at __SKILL_DIR__.
-Read __SKILL_DIR__/SKILL.md before answering, and follow its guidance. It is
-authoritative for CFEngine conventions and takes precedence over your prior
-assumptions.
+A cfengine-policy skill is installed and available to you. Use it before
+answering, and follow its guidance. It is authoritative for CFEngine conventions
+and takes precedence over your prior assumptions.

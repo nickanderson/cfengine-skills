@@ -9,8 +9,8 @@ to a specific skill revision.
 ## Run it
 
 ```bash
-./eval/run-eval.sh                            # all cases, sonnet, both arms
-./eval/run-eval.sh --case 01-motd --runs 3    # three samples per arm
+./eval/run-eval.sh                            # all cases, sonnet, both sides
+./eval/run-eval.sh --case 01-motd --runs 3    # three samples per side
 ./eval/run-eval.sh --functional               # also prove augments actually override
 ./eval/run-eval.sh --report-only              # rebuild report from existing results
 ./eval/run-eval.sh --help
@@ -27,18 +27,50 @@ generated agent no longer being able to run `cf-promises` introspection itself.
 
 ## Isolation
 
-Each arm runs in a throwaway jail:
+Each side runs in a throwaway jail:
 
 - `mktemp -d` working directory, discarded after the artifacts are copied out
 - a fresh `CLAUDE_CONFIG_DIR` holding only a copy of `.credentials.json`, so the
-  global `CLAUDE.md`, installed skills (including `cfengine-policy-reference`
-  from ce-toolkit), plugins and project settings cannot leak into either arm
-- `--disable-slash-commands`, `--strict-mcp-config`, `--no-session-persistence`
+  global `CLAUDE.md`, pre-installed skills (including `cfengine-policy-reference`
+  from ce-toolkit), plugins and project settings cannot leak into either side
+- `--strict-mcp-config`, `--no-session-persistence`
 
-Both arms get the same base system prompt. The **only** difference is that
-`with-skill` adds `--add-dir <repo>/cfengine-policy` plus four lines pointing at
-`SKILL.md`. Nothing in either prompt mentions augments, `isvariable`, or `def.json`
-beyond what the case prompt itself says.
+Both sides get the same base system prompt. The **only** difference is that
+`with-skill` installs the skill and is told to use it. Nothing in either prompt
+mentions augments, `isvariable`, or `def.json` beyond what the case prompt says.
+
+## How the skill reaches the model
+
+The skill is **installed**, not handed over as a file: `cfengine-policy/` is
+copied to `<jail>/config/skills/cfengine-policy/` and `scripts/` alongside it,
+so Claude Code loads it the way it loads any skill.
+
+This matters more than it sounds, and the eval got it wrong at first. The
+original version passed `--add-dir <repo>/cfengine-policy` and told the model to
+read `SKILL.md`. That grades a file no user is ever given: a SKILL.md contains
+` ```! ` blocks that the *harness* executes at load time, splicing their stdout
+into the skill text. Read as a plain file, those blocks never run, so the model
+never receives the documentation paths, the detected `cf-agent` version, or the
+missing-tool warnings that a real load provides.
+
+Two things that are easy to get wrong here, both found by testing rather than
+by reading:
+
+- **Claude Code does not search below `skills/<name>/SKILL.md`.** Copying the
+  repo in wholesale leaves the skill one level too deep and silently undiscovered.
+  The install must be flat. (The project README had this bug too.)
+- **`--disable-slash-commands` also disables skills.** The eval used to pass it
+  for isolation. With the skill installed but that flag set, the with-skill side
+  was quietly just a second baseline -- it scored *below* the unaided run before
+  this was caught. A fresh config dir has no custom commands to guard against,
+  so the flag is simply gone.
+
+`CFENGINE_SKILL_UPDATE_DISABLE=1` is set in the jail, so the skill's own
+update notice cannot vary the rendered text with how stale the checkout is.
+
+Runs recorded before this change are marked `skill add-dir` in the timeline and
+banded as their own ruler regime. They are not worse numbers on the same
+measurement -- they measured a different artifact.
 
 ## Where the CFEngine binaries run
 
@@ -125,7 +157,7 @@ It is opt-in because it evaluates model-generated policy.
 ```
 eval/
   run-eval.sh              driver
-  bin/analyze.py           extract + validate + check + score one arm
+  bin/analyze.py           extract + validate + check + score one run
   bin/aggregate.py         summary.json + append history.jsonl
   bin/report.py            self-contained HTML report for one run
   bin/compare.py           cross-model comparison from history.jsonl
@@ -135,8 +167,8 @@ eval/
   lib/extra-sys-vars.txt   real sys vars a plain container does not define
   cache/sys-vars.txt       regenerated at the start of every run
   results/<timestamp>/     run-info.json, summary.json, SKILL.md.snapshot,
-                           report.html, and per-arm response/workdir/result.json
-  results/history.jsonl    one row per run × case × arm — the progression record
+                           report.html, plus response/workdir/result.json per run
+  results/history.jsonl    one row per run × case × side — the progression record
   results/latest-report.html   symlink to the newest run's report (generated)
   results/compare.html         every model side by side (generated)
   archive/                     superseded runs, kept but not published
@@ -178,7 +210,7 @@ the generated `workdir/`, `cmd.sh`, `system-prompt.txt`, `SKILL.md.snapshot`) pl
   `./eval/run-eval.sh --report-only`
 - `cache/` -- host-specific, regenerated at the start of every run
 
-Artifacts are redacted by `bin/scrub.py`, which runs over each arm's output
+Artifacts are redacted by `bin/scrub.py`, which runs over each run's output
 directory *after* analysis -- so `cf-promises` validates the bytes the model
 actually wrote, not a rewritten copy. `$HOME` becomes `~`, the hostname becomes
 `<host>`, and `run-info.json` records a platform string rather than a hostname.
@@ -211,9 +243,9 @@ stands.
 
 ## Attributing a score to a skill revision
 
-`run-info.json` stamps the skill's commit, sha256 and dirty flag, and each arm
+`run-info.json` stamps the skill's commit, sha256 and dirty flag, and each run
 re-hashes `SKILL.md` after the model returns. If the skill is edited while an
-eval run is in flight, that arm's `meta.json` gets `skill_changed_during_run: true`
+eval run is in flight, that run's `meta.json` gets `skill_changed_during_run: true`
 and the run prints a warning -- its score belongs to neither revision and should
 be discarded. This is not hypothetical: it happened during the first eval run, and
 three opus runs silently graded against a skill that had changed underneath them.
