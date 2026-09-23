@@ -81,6 +81,9 @@ def main():
             "run_id": run_id,
             "timestamp": info.get("timestamp", run_id),
             "model": info.get("model", rs[0].get("model", "?")),
+            # What the alias resolved to; runs recorded before this was
+            # captured have none.
+            "model_id": "+".join(sorted({r["model_id"] for r in rs if r.get("model_id")})) or None,
             "claude_code": harness.get("claude_code", "unknown"),
             "eval_commit": harness.get("eval_commit", "unknown"),
             "eval_dirty": harness.get("eval_dirty"),

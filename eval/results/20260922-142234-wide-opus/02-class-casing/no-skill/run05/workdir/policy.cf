@@ -1,0 +1,96 @@
+# CFEngine class names and class expressions are case-sensitive; there is no
+# case-insensitive matching mode. So instead of matching loosely we normalize
+# the inventory data: every service name is lowercased and canonified
+# ("Node-Exporter" -> "node_exporter") before it becomes a has_<service> class.
+#
+# The only_if expressions are used verbatim. They must NOT be lowercased,
+# because they may reference hard classes that are mixed case (Monday,
+# Saturday, ...). They refer to services via the lowercase has_<service>
+# names, which is exactly what we define here.
+
+body common control
+{
+      bundlesequence => { "inventory_services" };
+}
+
+bundle agent inventory_services
+{
+  vars:
+      "inv"
+        data => readjson("$(this.promise_dirname)/inventory.json", 1M);
+
+      "i" slist => getindices("inv[services]");
+
+      # Normalized service name, e.g. "Node-Exporter" -> "node_exporter"
+      "name[$(i)]"
+        string => canonify(string_downcase("$(inv[services][$(i)][name])"));
+
+      # Condition that must also hold; defaults to "any" when absent
+      "only_if[$(i)]"
+        string => "$(inv[services][$(i)][only_if])",
+        if => isvariable("inv[services][$(i)][only_if]");
+      "only_if[$(i)]"
+        string => "any",
+        unless => isvariable("inv[services][$(i)][only_if]");
+
+      # Services this policy knows how to configure (bundle svc_<name>)
+      "known" slist => { "nginx", "postgresql", "node_exporter",
+                         "log_shipper", "backup_agent", "redis" };
+
+  classes:
+      # JSON boolean true (or the string "true", any casing) enables maintenance
+      "maintenance"
+        expression => strcmp("true", string_downcase("$(inv[maintenance])")),
+        scope => "namespace";
+
+      # All has_ classes are defined first, so any only_if may refer to them
+      "has_$(name[$(i)])"
+        expression => "any",
+        scope => "namespace";
+
+      "run_$(name[$(i)])"
+        expression => "$(only_if[$(i)])",
+        scope => "namespace";
+
+  methods:
+    !maintenance::
+      "svc_$(known)"
+        usebundle => "svc_$(known)",
+        if => "has_$(known).run_$(known)";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}

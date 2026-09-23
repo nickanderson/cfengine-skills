@@ -1,0 +1,148 @@
+#######################################################
+#
+# Read the service inventory and run the matching
+# per-service bundles, case-insensitively.
+#
+# CFEngine class expressions match class *names*
+# literally (case-sensitively) -- there is no
+# case-insensitive mode for the expression grammar
+# itself ('.', '|', '!', '(', ')'). So instead of trying
+# to make matching case-insensitive, we normalize the
+# casing once, at the point where classes are defined:
+# every service name from the inventory is lower-cased
+# and canonified before it becomes a "has_<service>"
+# class. "Nginx", "nginx" and "NGINX" all collapse to
+# the single class has_nginx, which is what the
+# lowercase bundles and only_if expressions expect.
+#
+#######################################################
+
+body common control
+{
+      bundlesequence => { "main" };
+}
+
+#######################################################
+
+bundle agent main
+{
+  methods:
+      "read inventory"
+        usebundle => read_inventory;
+
+      "nginx"
+        usebundle  => svc_nginx,
+        ifvarclass => "has_nginx.!in_maintenance.$(read_inventory.only_if[nginx])";
+
+      "postgresql"
+        usebundle  => svc_postgresql,
+        ifvarclass => "has_postgresql.!in_maintenance.$(read_inventory.only_if[postgresql])";
+
+      "node_exporter"
+        usebundle  => svc_node_exporter,
+        ifvarclass => "has_node_exporter.!in_maintenance.$(read_inventory.only_if[node_exporter])";
+
+      "log_shipper"
+        usebundle  => svc_log_shipper,
+        ifvarclass => "has_log_shipper.!in_maintenance.$(read_inventory.only_if[log_shipper])";
+
+      "backup_agent"
+        usebundle  => svc_backup_agent,
+        ifvarclass => "has_backup_agent.!in_maintenance.$(read_inventory.only_if[backup_agent])";
+
+      "redis"
+        usebundle  => svc_redis,
+        ifvarclass => "has_redis.!in_maintenance.$(read_inventory.only_if[redis])";
+}
+
+#######################################################
+
+bundle agent read_inventory
+# @brief Parse inventory.json, define a case-normalized
+# has_<service> class per listed service, and resolve
+# each known service's only_if expression (defaulting
+# to "any" when the inventory entry has none).
+{
+  vars:
+      "inv"  data  => readjson("$(this.promise_dirname)/inventory.json", 1000000);
+      "idxs" slist => getindices("inv[services]");
+
+      # The service bundles this policy knows how to run.
+      "known_services" slist => {
+                                   "nginx", "postgresql", "node_exporter",
+                                   "log_shipper", "backup_agent", "redis",
+                                 };
+
+      # Default: no only_if constraint for a known service.
+      # Overridden below when the inventory supplies one.
+      "only_if[$(known_services)]" string => "any";
+
+      # Normalize casing here: lower-case + canonify the
+      # inventory's service name so "Nginx", "nginx" and
+      # "NGINX" all produce the same class-name suffix.
+      "svc_key[$(idxs)]"
+        string => canonify(string_downcase("$(inv[services][$(idxs)][name])"));
+
+      # Carry over each entry's only_if expression, if any.
+      # These are written in lowercase by the inventory team
+      # and reference has_<service> classes, which are always
+      # lowercase because of the normalization above -- so no
+      # further case handling is needed here.
+      "only_if[$(svc_key[$(idxs)])]"
+        string => "$(inv[services][$(idxs)][only_if])",
+        policy => "overridable",
+        if     => isvariable("inv[services][$(idxs)][only_if]");
+
+  classes:
+      # A has_<service> class per inventory entry, keyed by
+      # the case-normalized name computed above. scope =>
+      # "namespace" is required so these classes are visible
+      # outside this bundle (classes default to bundle scope).
+      "has_$(svc_key[$(idxs)])"
+        expression => "any",
+        scope      => "namespace";
+
+      "in_maintenance"
+        expression => strcmp("$(inv[maintenance])", "true"),
+        scope      => "namespace";
+}
+
+#######################################################
+# Per-service bundle stubs
+#######################################################
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: svc_redis";
+}

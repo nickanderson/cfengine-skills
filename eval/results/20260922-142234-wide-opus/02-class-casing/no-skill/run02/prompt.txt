@@ -1,0 +1,35 @@
+Our inventory system exports, per host, the list of services the host runs.
+Policy reads that list, defines a `has_<service>` class for each entry, and
+runs the matching service bundle. An entry can also carry an `only_if` class
+expression, written by the inventory team, that must hold as well before the
+service bundle runs.
+
+Services are silently not being configured on some hosts, and we traced it to
+casing: the inventory says `Nginx` on one host, `nginx` or `NGINX` on another,
+and our bundles and the `only_if` expressions use lowercase names. Is it
+possible to make class expressions case-insensitive, so they match no matter
+how the inventory values are cased?
+
+Answer the question, then write the policy. Requirements:
+
+- Read the data from `inventory.json` in the same directory as the policy file
+  (`$(this.promise_dirname)/inventory.json`). An example export:
+
+  {
+    "maintenance": false,
+    "services": [
+      { "name": "Nginx" },
+      { "name": "Node-Exporter", "only_if": "has_nginx|has_postgresql" },
+      { "name": "Log-Shipper",   "only_if": "(has_nginx|has_postgresql).(Monday|Tuesday|Wednesday|Thursday|Friday)" },
+      { "name": "Backup-Agent",  "only_if": "has_postgresql.(Saturday|Sunday)" }
+    ]
+  }
+
+- The policy has one bundle per service it knows how to configure:
+  `svc_nginx`, `svc_postgresql`, `svc_node_exporter`, `svc_log_shipper`,
+  `svc_backup_agent` and `svc_redis`. Write them as stubs; each one only emits
+  the report `CONFIGURED: <its bundle name>`.
+- Run a service's bundle when the host lists that service, its `only_if` (if
+  present) is true, and the host is not in maintenance. Run no other service
+  bundles.
+- The policy must run standalone with `cf-agent -K -f ./policy.cf`.

@@ -1,0 +1,115 @@
+#
+# Runs per-host service bundles based on an inventory export that may spell
+# service names with inconsistent casing (Nginx / nginx / NGINX ...).
+#
+# CFEngine class expressions (the |, ., ! algebra used in `expression` and
+# `ifvarclass`) match class names by exact string -- there is no way to make
+# that matching case-insensitive. Instead, every service name coming out of
+# inventory.json is normalized (lower-cased + canonified) exactly once, at
+# the point where the has_<service> class is defined. Everything downstream
+# -- our own bundles and the inventory team's only_if expressions -- already
+# uses lowercase canonical names, so normalizing at the source is enough to
+# make the whole chain casing-proof.
+#
+
+body common control
+{
+      bundlesequence => { "main" };
+}
+
+bundle agent main
+{
+  vars:
+      "inv"          data  => readjson("$(this.promise_dirname)/inventory.json", "1000000");
+      "maintenance"  string => "$(inv[maintenance])";
+
+      "idx" slist => getindices("inv[services]");
+
+      "svc_canon[$(idx)]"
+        string => canonify(string_downcase("$(inv[services][$(idx)][name])"));
+
+      # Known service -> stub bundle map. Any inventory entry whose
+      # normalized name isn't a key here simply has no bundle to run.
+      "known_bundle[nginx]"         string => "svc_nginx";
+      "known_bundle[postgresql]"    string => "svc_postgresql";
+      "known_bundle[node_exporter]" string => "svc_node_exporter";
+      "known_bundle[log_shipper]"   string => "svc_log_shipper";
+      "known_bundle[backup_agent]"  string => "svc_backup_agent";
+      "known_bundle[redis]"         string => "svc_redis";
+
+      # Left unresolved (and therefore undefined) for entries with no
+      # matching stub bundle -- guarded against below with isvariable().
+      "bundle_name[$(idx)]" string => "$(known_bundle[$(svc_canon[$(idx)])])";
+
+  classes:
+      "in_maintenance" expression => strcmp(string_downcase("$(maintenance)"), "true");
+
+      # Must be defined before the only_if_ok_$(idx) promises below run, so
+      # they can gate on it within the same pass (class promises in one
+      # classes: block are evaluated top to bottom).
+      "has_only_if_$(idx)" expression => isvariable("inv[services][$(idx)][only_if]");
+
+      # Presence class: defined case-insensitively for every service the
+      # host lists, exactly once, normalized to lowercase.
+      "has_$(svc_canon[$(idx)])" expression => "any";
+
+      # An entry with no only_if is unconditionally ok to run. This is done
+      # as two class promises (not a vars default) because classes are
+      # monotonic -- re-evaluating them each pass is safe -- whereas a vars
+      # promise locks in whatever value it gets on its first successful
+      # pass, which would wrongly latch "any" before has_only_if_$(idx) is
+      # known.
+      "only_if_ok_$(idx)"
+        expression => "$(inv[services][$(idx)][only_if])",
+        ifvarclass => "has_only_if_$(idx)";
+
+      "only_if_ok_$(idx)"
+        expression => "any",
+        ifvarclass => "!has_only_if_$(idx)";
+
+      "bundle_known_$(idx)" expression => isvariable("bundle_name[$(idx)]");
+
+      "run_$(idx)"
+        expression => "has_$(svc_canon[$(idx)]).only_if_ok_$(idx).!in_maintenance";
+
+  methods:
+      "configure service $(idx)"
+        usebundle  => "$(bundle_name[$(idx)])",
+        ifvarclass => "run_$(idx).bundle_known_$(idx)";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: svc_redis";
+}

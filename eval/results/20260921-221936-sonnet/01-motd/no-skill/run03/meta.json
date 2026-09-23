@@ -11,5 +11,7 @@
     "is_error": false,
     "subtype": "success"
   },
-  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d"
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "model_id": "claude-sonnet-5",
+  "model_id_source": "backfilled 2026-09-22: alias re-resolved with the Claude Code build the run used (2.1.278); raw.json was not kept"
 }

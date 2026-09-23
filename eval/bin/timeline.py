@@ -12,7 +12,7 @@ import html
 import json
 from pathlib import Path
 
-from report import CSS, SERIES, VARIANTS, e, variant_of
+from report import CSS, SERIES, VARIANTS, e, model_key, variant_of
 
 JS = """
 const t = document.getElementById('tt');
@@ -216,9 +216,9 @@ def main():
     if not rows:
         raise SystemExit("timeline: no rows for case %s" % args.case)
 
-    by_run_variant = {(r["run_id"], r["model"], variant_of(r)): r for r in rows}
+    by_run_variant = {(r["run_id"], model_key(r), variant_of(r)): r for r in rows}
     runs = sorted({r["run_id"] for r in rows})
-    models = sorted({r["model"] for r in rows})
+    models = sorted({model_key(r) for r in rows})
     maxscore = rows[0]["max_score"]
     # rubric version comes from the history row: it is a property of the
     # case, while run-info.json describes the whole invocation

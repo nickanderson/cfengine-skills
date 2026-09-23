@@ -1,0 +1,86 @@
+body common control
+{
+  bundlesequence => { "main" };
+  inputs => { };
+}
+
+bundle agent main
+{
+  vars:
+    "inventory_file" string => "$(this.promise_dirname)/inventory.json";
+    "inventory" data => readjson("$(inventory_file)");
+    "service_indices" slist => getindices("inventory[services]");
+
+  classes:
+    # Check maintenance status
+    "in_maintenance" expression => "$(inventory[maintenance])";
+
+    # Create has_<service> classes with normalized names (lowercase, hyphens→underscores)
+    # This ensures case-insensitive matching: Nginx, nginx, NGINX all become has_nginx
+    "has_$(canonify(tolower(inventory[services][$(service_indices)][name])))"
+      comment => "Service available: $(inventory[services][$(service_indices)][name])";
+
+  methods:
+    !in_maintenance::
+      "service_$(service_indices)"
+        usebundle => apply_service("$(service_indices)", @(inventory));
+}
+
+bundle agent apply_service(service_idx, inventory)
+{
+  vars:
+    "service_name" string => "$(inventory[services][$(service_idx)][name])";
+    "service_name_canonical" string => canonify(tolower("$(service_name)"));
+    "only_if_expr" string => "$(inventory[services][$(service_idx)][only_if])";
+
+  classes:
+    "service_in_inventory" expression => "has_$(service_name_canonical)";
+    "has_only_if_clause" expression => isvariable("inventory[services][$(service_idx)][only_if]");
+
+  methods:
+    # Run service if in inventory and no only_if clause
+    service_in_inventory.!has_only_if_clause::
+      "run" usebundle => "svc_$(service_name_canonical)";
+
+    # Run service if in inventory and only_if condition is true
+    # Wrapping in parentheses ensures correct boolean precedence
+    service_in_inventory.has_only_if_clause."($(only_if_expr))"::
+      "run" usebundle => "svc_$(service_name_canonical)";
+}
+
+# Service bundle stubs
+bundle agent svc_nginx
+{
+  reports:
+    "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+    "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+    "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+    "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+    "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+    "CONFIGURED: svc_redis";
+}

@@ -1,0 +1,19 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 229735,
+    "duration_api_ms": 228081,
+    "num_turns": 17,
+    "total_cost_usd": 0.4895122,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+  "model_id": "claude-sonnet-5",
+  "models_used": [
+    "claude-sonnet-5"
+  ]
+}

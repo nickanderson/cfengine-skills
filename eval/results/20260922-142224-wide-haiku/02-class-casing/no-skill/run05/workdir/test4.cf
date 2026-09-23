@@ -1,0 +1,24 @@
+bundle agent main
+{
+  vars:
+    "inventory" data => readjson("$(this.promise_dirname)/inventory.json");
+    "indices" slist => getindices("inventory.services");
+
+  reports:
+    "Indices: $(indices)";
+
+  methods:
+    "check_$(indices)" usebundle => check_service("$(indices)");
+}
+
+bundle agent check_service(index)
+{
+  vars:
+    "inventory" data => readjson("$(this.promise_dirname)/inventory.json");
+    # Use the index to access the service
+    "service" data => "$(inventory.services[$(index)])";
+    "name" string => "service";
+
+  reports:
+    "Index $(index): Service data = $(service)";
+}

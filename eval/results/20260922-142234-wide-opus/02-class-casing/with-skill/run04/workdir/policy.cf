@@ -1,0 +1,100 @@
+body common control
+{
+      bundlesequence => { "inventory_classes", "inventory_services" };
+}
+
+bundle common inventory_classes
+# @brief Read the inventory export and define a has_<service> class per entry.
+#
+# Class names are case-sensitive and nothing makes class expressions
+# case-insensitive, so the inventory value is normalized to lowercase (and
+# canonified) when the class is defined: Nginx, nginx and NGINX all define
+# has_nginx, and Node-Exporter defines has_node_exporter.
+{
+  vars:
+      "inv" data => readjson("$(this.promise_dirname)/inventory.json");
+      "i" slist => getindices("inv[services]");
+
+      # Normalized service name per inventory entry
+      "svc[$(i)]"
+        string => canonify(string_downcase("$(inv[services][$(i)][name])"));
+
+      # only_if is used as-is. It is not downcased: that would break
+      # mixed-case hard classes such as Monday.
+      "cond[$(i)]"
+        string => "$(inv[services][$(i)][only_if])",
+        if => isvariable("inv[services][$(i)][only_if]");
+      "cond[$(i)]"
+        string => "any",
+        unless => isvariable("inv[services][$(i)][only_if]");
+
+  classes:
+      "has_$(svc[$(i)])"
+        comment => "Host lists this service in the inventory";
+
+      "inventory_maintenance"
+        expression => strcmp(string_downcase("$(inv[maintenance])"), "true"),
+        comment => "Host is in maintenance; configure no services";
+}
+
+bundle agent inventory_services
+# @brief Run the bundle for each known service the host lists, when its
+# only_if holds and the host is not in maintenance.
+{
+  vars:
+      # Services this policy has a svc_<name> bundle for
+      "known" slist => { "nginx", "postgresql", "node_exporter",
+                         "log_shipper", "backup_agent", "redis" };
+
+      "i" slist => { @(inventory_classes.i) };
+
+  classes:
+      # Evaluated here, after inventory_classes has defined every has_*
+      # class, so only_if can refer to any service on the host. The data
+      # supplied expression is parenthesized before combining it with ours.
+      "run_$(inventory_classes.svc[$(i)])"
+        if => "has_$(inventory_classes.svc[$(i)]).!inventory_maintenance.($(inventory_classes.cond[$(i)]))";
+
+  methods:
+      # Iterating over the known list (not the inventory) means usebundle
+      # always names an existing bundle, and each runs at most once.
+      "svc_$(known)"
+        usebundle => "svc_$(known)",
+        if => "run_$(known)";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}

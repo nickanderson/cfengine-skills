@@ -1,0 +1,117 @@
+#
+# Inventory-driven service configuration.
+#
+# Class *matching* in CFEngine is exact-string / case-sensitive; there is no
+# "case-insensitive class expression" mode to flip on. So instead of trying
+# to make `only_if` expressions tolerant of casing, this policy normalizes
+# each inventory service name (downcase + canonify) once, at the single
+# point where the `has_<service>` class gets defined. That guarantees
+# "Nginx", "nginx" and "NGINX" all collapse onto the same class: has_nginx.
+# Because has_<service> classes always end up lowercase/canonical, the
+# `only_if` expressions written by the inventory team (already lowercase,
+# e.g. "has_nginx|has_postgresql") line up correctly no matter how the
+# source "name" field was cased on a given host.
+#
+body common control
+{
+      bundlesequence => { "main" };
+}
+
+bundle agent main
+{
+    vars:
+        "inv" data  => readjson("$(this.promise_dirname)/inventory.json", "1M");
+        "idx" slist => getindices("inv[services]");
+
+    classes:
+        # Host is in maintenance mode -> no service bundles should run.
+        "maintenance"
+            expression => "any",
+            scope      => "namespace",
+            if         => strcmp("$(inv[maintenance])", "true");
+
+    methods:
+        # Pass 1: define has_<service> for every inventoried service, with
+        # the name case-folded/canonicalized, regardless of source casing.
+        "has_$(idx)" usebundle => declare_has("main.inv[services][$(idx)]");
+
+        # Pass 2: now that all has_<service> classes exist, evaluate each
+        # entry's only_if (defaulting to "any" when absent) to decide
+        # whether to actually configure the service.
+        "run_$(idx)" usebundle => declare_run("main.inv[services][$(idx)]");
+
+        # Only ever call the bundles we know about, and only when the
+        # inventory-driven run_<service> class says so.
+        "nginx"         usebundle => svc_nginx,         ifvarclass => "run_nginx";
+        "postgresql"    usebundle => svc_postgresql,    ifvarclass => "run_postgresql";
+        "node_exporter" usebundle => svc_node_exporter, ifvarclass => "run_node_exporter";
+        "log_shipper"   usebundle => svc_log_shipper,   ifvarclass => "run_log_shipper";
+        "backup_agent"  usebundle => svc_backup_agent,  ifvarclass => "run_backup_agent";
+        "redis"         usebundle => svc_redis,         ifvarclass => "run_redis";
+}
+
+bundle agent declare_has(entry_ref)
+{
+    vars:
+        "entry" data   => mergedata("$(entry_ref)");
+
+        # Case-fold + canonify: "Nginx" / "nginx" / "NGINX" / "Node-Exporter"
+        # all normalize to the same has_<...> class name.
+        "canon" string => canonify(string_downcase("$(entry[name])"));
+
+    classes:
+        "has_$(canon)"
+            expression => "any",
+            scope      => "namespace";
+}
+
+bundle agent declare_run(entry_ref)
+{
+    vars:
+        "defaults" data   => parsejson('{"only_if":"any"}');
+        "entry"    data   => mergedata("$(entry_ref)");
+        "merged"   data   => mergedata("defaults", "entry");
+        "canon"    string => canonify(string_downcase("$(entry[name])"));
+        "only_if"  string => "$(merged[only_if])";
+
+    classes:
+        "run_$(canon)"
+            expression => "has_$(canon).($(only_if)).!maintenance",
+            scope      => "namespace";
+}
+
+bundle agent svc_nginx
+{
+    reports:
+        "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+    reports:
+        "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+    reports:
+        "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+    reports:
+        "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+    reports:
+        "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+    reports:
+        "CONFIGURED: svc_redis";
+}

@@ -12,7 +12,7 @@ import html
 import json
 from pathlib import Path
 
-from report import CSS, SERIES, VARIANTS, e, variant_of  # one source of truth for the palette
+from report import CSS, SERIES, VARIANTS, e, model_key, variant_of  # one source of truth for the palette
 
 JS = """
 const t = document.getElementById('tt');
@@ -48,13 +48,13 @@ def load(rows_all, case):
     rows = [r for r in rows_all if r.get("case") == case]
     latest = {}
     for r in rows:
-        m = r["model"]
+        m = model_key(r)
         if m not in latest or r["run_id"] > latest[m]:
             latest[m] = r["run_id"]
     models = {}
     for r in rows:
-        if r["run_id"] == latest[r["model"]]:
-            models.setdefault(r["model"], {})[variant_of(r)] = r
+        if r["run_id"] == latest[model_key(r)]:
+            models.setdefault(model_key(r), {})[variant_of(r)] = r
     return models, latest
 
 

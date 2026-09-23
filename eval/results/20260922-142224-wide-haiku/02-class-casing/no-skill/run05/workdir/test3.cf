@@ -1,0 +1,22 @@
+bundle agent main
+{
+  vars:
+    "inventory" data => readjson("$(this.promise_dirname)/inventory.json");
+    "service_names" slist => getindices("inventory.services");
+
+  methods:
+    "check_service" usebundle => check_service("$(inventory.services[0].name)");
+}
+
+bundle agent check_service(name)
+{
+  classes:
+    "is_nginx" expression => regcmp("(?i)nginx", "$(name)");
+
+  reports:
+    "Service name: $(name)";
+    is_nginx::
+      "This is nginx";
+    !is_nginx::
+      "Not nginx";
+}

@@ -1,0 +1,114 @@
+body common control
+{
+      bundlesequence => { "inventory", "main" };
+}
+
+# Reads the per-host service inventory and turns it into two things every
+# other bundle relies on: a has_<service> class per listed service, and an
+# only_if[<service>] lookup of the class expression (if any) that must also
+# hold. Classes are case-sensitive and cannot be matched case-insensitively,
+# so the inventory's casing (Nginx / nginx / NGINX) is normalized here, once,
+# when the class is defined -- everything downstream can stay lowercase.
+bundle common inventory
+{
+  vars:
+      "data"
+        data => readjson("$(this.promise_dirname)/inventory.json");
+
+      "idx"
+        slist => getindices("data[services]");
+
+      "raw_name[$(idx)]"
+        string => "$(data[services][$(idx)][name])";
+
+      "norm_name[$(idx)]"
+        string => canonify(string_downcase("$(raw_name[$(idx)])"));
+
+      # have_only_if_$(idx) (defined below) isn't known until pass 2; until
+      # then these two promises are simply skipped, which is harmless since
+      # they're recomputed every pass.
+      "only_if[$(norm_name[$(idx)])]"
+        string => "$(data[services][$(idx)][only_if])",
+        if => "have_only_if_$(idx)";
+
+      "only_if[$(norm_name[$(idx)])]"
+        string => "any",
+        unless => "have_only_if_$(idx)";
+
+  classes:
+      "has_$(norm_name[$(idx)])"
+        expression => "any";
+
+      "maintenance"
+        expression => strcmp(string_downcase("$(data[maintenance])"), "true");
+
+      # ifelse()/isvariable() can't be used directly for this: function
+      # arguments are expanded eagerly, so referencing a missing
+      # data[...][only_if] key inside the unused branch would still make the
+      # whole promise unresolvable. A guard class sidesteps that.
+      "have_only_if_$(idx)"
+        expression => isvariable("data[services][$(idx)][only_if]");
+}
+
+bundle agent main
+{
+  vars:
+      "known_services"
+        slist => { "nginx", "postgresql", "node_exporter", "log_shipper", "backup_agent", "redis" };
+
+      # Default to "any" for known services the inventory doesn't mention at
+      # all, or mentions without an only_if. See bundle inventory for why
+      # this needs a guard class rather than ifelse()/isvariable().
+      "only_if_expr[$(known_services)]"
+        string => "$(inventory.only_if[$(known_services)])",
+        if => "have_only_if_$(known_services)";
+
+      "only_if_expr[$(known_services)]"
+        string => "any",
+        unless => "have_only_if_$(known_services)";
+
+  classes:
+      "have_only_if_$(known_services)"
+        expression => isvariable("inventory.only_if[$(known_services)]");
+
+  methods:
+      "configure $(known_services)"
+        usebundle => "svc_$(known_services)",
+        if => "has_$(known_services).!maintenance.($(only_if_expr[$(known_services)]))";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: svc_redis";
+}

@@ -250,6 +250,21 @@ and the run prints a warning -- its score belongs to neither revision and should
 be discarded. This is not hypothetical: it happened during the first eval run, and
 three opus runs silently graded against a skill that had changed underneath them.
 
+**The model is recorded as what the alias resolved to, not the alias.**
+`--model opus` names whatever Claude Code currently maps `opus` to, and that
+mapping moves with releases: Claude Code 2.1.278 resolved `opus` to
+`claude-opus-5`, while 2.1.280 resolves it to `claude-opus-5-5`. Each run's
+`meta.json` records `model_id` (the model that wrote the most output -- Claude
+Code also calls a small model for housekeeping) and `models_used`, both taken
+from `modelUsage` in the CLI's JSON output. History rows carry `model_id`, and
+`compare.html` and the timeline group by it, so a new release starts its own
+series instead of silently extending the old one.
+
+The 2026-09-21 runs predate this. Their `model_id` was backfilled by
+re-resolving each alias with the Claude Code build those runs used (2.1.278,
+still installed), and is marked with `model_id_source` so it is not mistaken for
+a recorded value.
+
 Weights live in `case.json`, so scores are only comparable while the weights hold.
 Changing them re-bases the ruler; archive the old runs rather than charting across
 the change.

@@ -1,0 +1,113 @@
+body common control
+{
+      bundlesequence => { "load", "main" };
+}
+
+###############################################################################
+# load: parses inventory.json and derives the per-entry facts "main" needs.
+#
+# This runs as its own bundle (rather than folded into "main") so that its
+# classes are fully settled before "main" ever evaluates. Deriving a class
+# from JSON, and then using that class to pick a variable's value, and then
+# using that variable inside another class expression, is a circular
+# class->var->class dependency; if all three lived in a single bundle, an
+# early, not-yet-converged pass could lock in a wrong class value forever
+# (soft classes are monotonic: once set true within a run they never get
+# unset, even if a later pass recomputes the same expression as false).
+# Splitting the JSON parsing into a bundle that completes first avoids that.
+###############################################################################
+bundle agent load
+{
+  vars:
+      "inv"  data  => readjson("$(this.promise_dirname)/inventory.json", 1000000);
+      "idx"  slist => getindices("inv[services]");
+
+      # Per-entry name and its case-normalized, canonified form, e.g.
+      # "Node-Exporter" -> "node-exporter" -> "node_exporter". Canonicalizing
+      # here is what makes matching effectively case-insensitive: no matter
+      # how the inventory team cases a name, it always yields the same class.
+      "name[$(idx)]"  string => "$(inv[services][$(idx)][name])";
+      "canon[$(idx)]" string => canonify(string_downcase("$(name[$(idx)])"));
+
+  classes:
+      "maintenance" expression => strcmp("$(inv[maintenance])", "true"),
+        scope => "namespace";
+
+      # Whether entry $(idx) carries an only_if key at all. Referencing a
+      # JSON key that may not exist (e.g. Nginx has no only_if) directly in
+      # a variable's value would leave that variable unresolved; isvariable()
+      # lets us test for it safely first.
+      "has_only_if_$(idx)" expression => isvariable("inv[services][$(idx)][only_if]"),
+        scope => "namespace";
+}
+
+###############################################################################
+# main: turns the parsed inventory into has_<service>/run_<service> classes
+# and runs the known service bundles.
+###############################################################################
+bundle agent main
+{
+  vars:
+      # only_if defaults to "any" when the entry doesn't carry one.
+      "only_if[$(load.idx)]"
+        string => "$(load.inv[services][$(load.idx)][only_if])",
+        ifvarclass => "has_only_if_$(load.idx)";
+
+      "only_if[$(load.idx)]"
+        string => "any",
+        ifvarclass => "!has_only_if_$(load.idx)";
+
+  classes:
+      # Defines has_nginx, has_node_exporter, ... regardless of source casing.
+      "has_$(load.canon[$(load.idx)])" expression => "any";
+
+      "run_$(load.canon[$(load.idx)])"
+        expression => "has_$(load.canon[$(load.idx)]).!maintenance.($(only_if[$(load.idx)]))";
+
+  methods:
+      "nginx"         usebundle => svc_nginx,         ifvarclass => "run_nginx";
+      "postgresql"    usebundle => svc_postgresql,    ifvarclass => "run_postgresql";
+      "node_exporter" usebundle => svc_node_exporter, ifvarclass => "run_node_exporter";
+      "log_shipper"   usebundle => svc_log_shipper,   ifvarclass => "run_log_shipper";
+      "backup_agent"  usebundle => svc_backup_agent,  ifvarclass => "run_backup_agent";
+      "redis"         usebundle => svc_redis,         ifvarclass => "run_redis";
+}
+
+###############################################################################
+# Service bundle stubs
+###############################################################################
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: svc_redis";
+}

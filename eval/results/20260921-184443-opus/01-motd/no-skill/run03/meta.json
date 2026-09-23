@@ -11,5 +11,7 @@
     "is_error": false,
     "subtype": "success"
   },
-  "skill_sha256": "03358c0bf9c6a76f38bd6bbd8cbc6ea680ba7067191b4ae03e2b596ba0c3d44a"
+  "skill_sha256": "03358c0bf9c6a76f38bd6bbd8cbc6ea680ba7067191b4ae03e2b596ba0c3d44a",
+  "model_id": "claude-opus-5",
+  "model_id_source": "backfilled 2026-09-22: alias re-resolved with the Claude Code build the run used (2.1.278); raw.json was not kept"
 }

@@ -1,0 +1,8 @@
+{
+  "maintenance": false,
+  "services": [
+    { "name": "NGINX", "only_if": "" },
+    { "name": "node-exporter", "only_if": "has_nginx" },
+    { "name": "LOG_SHIPPER",   "only_if": "has_nginx.has_node_exporter" }
+  ]
+}

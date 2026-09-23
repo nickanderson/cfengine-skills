@@ -1,0 +1,102 @@
+body common control
+{
+      bundlesequence => { "inventory_classes", "inventory_services" };
+}
+
+bundle common inventory_classes
+# @brief Read the inventory export and define one has_<service> class per
+# listed service. Class names are case-sensitive and cannot be matched
+# case-insensitively, so the service name is normalized (lowercased and
+# canonified) at the point where the class is defined.
+{
+  vars:
+      "inv"
+        data => readjson("$(this.promise_dirname)/inventory.json");
+
+      "idx"
+        slist => getindices("inv[services]");
+
+      # "Node-Exporter" -> "node_exporter"
+      "svc[$(idx)]"
+        string => canonify(string_downcase("$(inv[services][$(idx)][name])"));
+
+      # The only_if expression is used as written (not downcased, since it may
+      # reference mixed-case hard classes such as Monday). Parenthesized so it
+      # combines safely with other conditions. Absent means always true. (Two
+      # promises rather than ifelse(): ifelse() is not evaluated when one of its
+      # arguments references a key that does not exist.)
+      "cond[$(idx)]"
+        string => "any";
+
+      "cond[$(idx)]"
+        string => "($(inv[services][$(idx)][only_if]))",
+        if => isvariable("inv[services][$(idx)][only_if]");
+
+  classes:
+      "has_$(svc[$(idx)])"
+        expression => "any";
+
+      "inventory_maintenance"
+        expression => strcmp("true", "$(inv[maintenance])");
+}
+
+bundle agent inventory_services
+# @brief Run the bundle for each known service that the host lists, whose
+# only_if holds, when the host is not in maintenance.
+{
+  vars:
+      # Services this policy knows how to configure (bundle svc_<name>).
+      "known"
+        slist => { "nginx", "postgresql", "node_exporter",
+                   "log_shipper", "backup_agent", "redis" };
+
+  classes:
+      # Evaluated after inventory_classes has finished, so every has_* class
+      # referenced by an only_if expression is already defined.
+      "run_$(inventory_classes.svc[$(inventory_classes.idx)])"
+        expression => "$(inventory_classes.cond[$(inventory_classes.idx)])";
+
+  methods:
+    !inventory_maintenance::
+      # Iterate over known names only, so an unknown inventory entry can never
+      # produce a usebundle reference to a bundle that does not exist.
+      "svc_$(known)"
+        usebundle => "svc_$(known)",
+        if => canonify("run_$(known)");
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: $(this.bundle)";
+}

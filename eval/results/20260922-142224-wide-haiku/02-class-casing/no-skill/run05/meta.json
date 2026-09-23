@@ -1,0 +1,19 @@
+{
+  "variant": "no-skill",
+  "run": 5,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 361834,
+    "duration_api_ms": 296482,
+    "num_turns": 61,
+    "total_cost_usd": 0.6725277000000001,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "358159eaa4652992df4731b313b481d2a82a86976d6e989d9aecb3ce5509c15d",
+  "model_id": "claude-haiku-4-5-20251001",
+  "models_used": [
+    "claude-haiku-4-5-20251001"
+  ]
+}

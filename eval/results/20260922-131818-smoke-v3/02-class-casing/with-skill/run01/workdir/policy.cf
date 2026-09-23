@@ -1,0 +1,126 @@
+body common control
+{
+      bundlesequence  => { "main" };
+}
+
+bundle agent main
+# @brief Read the inventory export and run the service bundle for each
+# service the host lists, subject to its `only_if` class and maintenance mode.
+{
+  vars:
+      "inventory"
+        data => readjson("$(this.promise_dirname)/inventory.json", 1048576);
+
+      "service_idx"
+        slist => getindices("inventory[services]");
+
+      # Case-insensitive matching happens here: the class suffix is derived
+      # by downcasing + canonifying the inventory name, so "Nginx", "nginx"
+      # and "NGINX" all collapse to the same "has_nginx" class.
+      "service_name[$(service_idx)]"
+        string => canonify(string_downcase("$(inventory[services][$(service_idx)][name])"));
+
+      "maintenance_value"
+        string => "$(inventory[maintenance])";
+
+      # Default: no only_if entry means the service is always allowed to
+      # run. Guarded with if/unless (evaluated immediately, unlike
+      # ifvarclass against a separately-defined class) so we never
+      # dereference an "only_if" key that doesn't exist on this entry.
+      "service_only_if[$(service_idx)]"
+        string => "any",
+        unless => isvariable("inventory[services][$(service_idx)][only_if]");
+
+      "service_only_if[$(service_idx)]"
+        string => "$(inventory[services][$(service_idx)][only_if])",
+        if => isvariable("inventory[services][$(service_idx)][only_if]");
+
+  classes:
+      "maintenance"
+        expression => ifelse(strcmp("$(maintenance_value)", "true"), "any", "!any");
+
+      "has_$(service_name[$(service_idx)])"
+        expression => "any";
+
+      "only_if_ok_$(service_name[$(service_idx)])"
+        expression => "$(service_only_if[$(service_idx)])";
+
+      "do_nginx"
+        expression => "has_nginx.only_if_ok_nginx.!maintenance";
+
+      "do_postgresql"
+        expression => "has_postgresql.only_if_ok_postgresql.!maintenance";
+
+      "do_node_exporter"
+        expression => "has_node_exporter.only_if_ok_node_exporter.!maintenance";
+
+      "do_log_shipper"
+        expression => "has_log_shipper.only_if_ok_log_shipper.!maintenance";
+
+      "do_backup_agent"
+        expression => "has_backup_agent.only_if_ok_backup_agent.!maintenance";
+
+      "do_redis"
+        expression => "has_redis.only_if_ok_redis.!maintenance";
+
+  methods:
+      "svc_nginx"
+        usebundle => svc_nginx,
+        ifvarclass => "do_nginx";
+
+      "svc_postgresql"
+        usebundle => svc_postgresql,
+        ifvarclass => "do_postgresql";
+
+      "svc_node_exporter"
+        usebundle => svc_node_exporter,
+        ifvarclass => "do_node_exporter";
+
+      "svc_log_shipper"
+        usebundle => svc_log_shipper,
+        ifvarclass => "do_log_shipper";
+
+      "svc_backup_agent"
+        usebundle => svc_backup_agent,
+        ifvarclass => "do_backup_agent";
+
+      "svc_redis"
+        usebundle => svc_redis,
+        ifvarclass => "do_redis";
+}
+
+bundle agent svc_nginx
+{
+  reports:
+      "CONFIGURED: svc_nginx";
+}
+
+bundle agent svc_postgresql
+{
+  reports:
+      "CONFIGURED: svc_postgresql";
+}
+
+bundle agent svc_node_exporter
+{
+  reports:
+      "CONFIGURED: svc_node_exporter";
+}
+
+bundle agent svc_log_shipper
+{
+  reports:
+      "CONFIGURED: svc_log_shipper";
+}
+
+bundle agent svc_backup_agent
+{
+  reports:
+      "CONFIGURED: svc_backup_agent";
+}
+
+bundle agent svc_redis
+{
+  reports:
+      "CONFIGURED: svc_redis";
+}

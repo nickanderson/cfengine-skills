@@ -299,13 +299,20 @@ try:
     text = obj.get("result", "") or ""
     cli = {k: obj.get(k) for k in
            ("duration_ms", "duration_api_ms", "num_turns", "total_cost_usd", "is_error", "subtype")}
+    usage = obj.get("modelUsage") or {}
 except ValueError:
-    cli = {"parse_error": True}
+    cli, usage = {"parse_error": True}, {}
 # Written verbatim; bin/scrub.py redacts this whole directory after analysis.
 (out / "response.md").write_text(text)
 (out / "system-prompt.txt").write_text(os.environ.get("SYSPROMPT", ""))
 meta = {"variant": variant, "run": idx, "model": model, "exit_code": rc, "cli": cli,
         "skill_sha256": sha_before}
+# --model takes an alias that resolves to whatever is newest, so record what it
+# resolved to. Claude Code also calls a small model for housekeeping; the run's
+# model is the one that wrote the most output.
+if usage:
+    meta["model_id"] = max(usage, key=lambda m: usage[m].get("outputTokens") or 0)
+    meta["models_used"] = sorted(usage)
 if sha_before != sha_after:
     # The skill was edited while this run was in flight: its result cannot be
     # attributed to either revision.

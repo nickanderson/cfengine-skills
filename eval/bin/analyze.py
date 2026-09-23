@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Identity redaction lives in scrub.py so run-eval.sh can apply the same rules
@@ -33,6 +34,11 @@ AGENT_BUNDLE_RE = re.compile(r"^\s*bundle\s+agent\s+([A-Za-z0-9_]+)\s*(\([^)]*\)
 BUNDLE_RE = re.compile(r"^\s*bundle\s+(agent|common)\s+([A-Za-z0-9_]+)\s*(\([^)]*\))?", re.M)
 BUNDLESEQ_RE = re.compile(r"\bbundlesequence\s*=>")
 AUGMENTS_KEYS = {"vars", "classes", "inputs", "augments", "variables", "tags"}
+# "case-sensitive", "never case-insensitive", "matched literally": all say no.
+CASE_SENSITIVE_RE = re.compile(r"case[- ]?(?:in)?sensitiv\w*|\bliterall?y\b", re.I)
+IFVARCLASS_RE = re.compile(r"\bifvarclass\s*=>")
+IF_RE = re.compile(r"(?<![\w.])if\s*=>")
+CASE_FN_RE = re.compile(r"\bstring_(?:down|up)case\s*\(")
 
 
 def strip_comments(text):
@@ -351,6 +357,131 @@ def functional_check(root, cf_paths, patterns, stdlib):
     return out
 
 
+def casing_check(root, cf_paths, case, stdlib):
+    """Run the policy once per data variant in case.json and record which items
+    it reports under the case's marker (e.g. "CONFIGURED: svc_nginx").
+
+    An expected value of "weekday" or "weekend" is resolved against the
+    container's clock (UTC). Cases pair a weekday-only item with a weekend-only
+    one, so an answer that downcases a whole expression -- breaking mixed-case
+    hard classes like Monday -- fails one of them whatever day the eval runs."""
+    exp = case["expect"]
+    marker_re = re.compile(re.escape(exp["marker"]) + r":\s*([A-Za-z0-9_.-]+)")
+    out = {"ran": False, "status": "skipped", "weekday": None, "variants": []}
+    if not cf_paths:
+        out["status"] = "no policy"
+        return out
+    now = datetime.now(timezone.utc)
+    weekend = now.weekday() >= 5
+    out["weekday"] = now.strftime("%A")
+
+    def resolve(want):
+        return {"weekday": not weekend, "weekend": weekend}.get(want, want) is True
+
+    d, rels = stage(root, cf_paths, stdlib=stdlib if stdlib and os.path.exists(stdlib) else None)
+    try:
+        entry = entry_points(rels)[0]
+        all_text = "\n".join((Path(d) / r).read_text(errors="replace") for r in rels)
+        cmd = ["cf-agent", "-Kn", "-f", "./" + entry]
+        if not BUNDLESEQ_RE.search(all_text) and not re.search(
+                r"^\s*bundle\s+agent\s+(main|__main__)\b", strip_comments(all_text), re.M):
+            bundles = parameterless_bundles((Path(d) / entry).read_text(errors="replace"))
+            if not bundles:
+                out["status"] = "no bundlesequence and no parameterless agent bundle"
+                return out
+            cmd += ["-b", ",".join(bundles)]
+        # The prompt says the data sits beside the policy file; put it beside
+        # every policy file, overwriting any copy the model wrote.
+        dirs = {(Path(d) / r).parent for r in rels}
+        for v in exp["variants"]:
+            for dd in dirs:
+                (dd / exp["data_file"]).write_text(json.dumps(v["data"], indent=2))
+            rc, log = run(cmd, cwd=d, timeout=180)
+            got = sorted(set(marker_re.findall(log)))
+            want = {n for n, w in v["expect"].items() if resolve(w)}
+            out["variants"].append({
+                "label": v.get("label", ""), "rc": rc, "applies": got,
+                "missing": sorted(want - set(got)),
+                "unexpected": sorted(set(got) - want),
+                "log": redact("\n".join(log.splitlines()[-20:])) if not got or rc else "",
+            })
+        out["ran"] = True
+        ok = sum(1 for v in out["variants"] if not v["missing"] and not v["unexpected"])
+        out["status"] = ("ok" if ok == len(out["variants"]) else
+                         "partial" if ok else "no variant correct")
+    finally:
+        shutil.rmtree(d, ignore_errors=True)
+    return out
+
+
+def score_casing(case, validation, sysvars, response, policy_text, fn):
+    w = case["weights"]
+    checks = []
+
+    def add(cid, label, earned_frac, detail):
+        checks.append({"id": cid, "label": label, "weight": w[cid],
+                       "earned": round(w[cid] * earned_frac, 2), "detail": detail})
+
+    if validation["standalone_ok"]:
+        add("validate", "Policy passes cf-promises standalone", 1, "cf-promises -cf clean")
+    elif validation.get("stdlib_ok"):
+        add("validate", "Policy passes cf-promises standalone", 0.6,
+            "needed stdlib.cf to resolve undefined body/bundle")
+    else:
+        first = next((r["output"].splitlines()[0] if r["output"] else "rc=%d" % r["rc"]
+                      for r in validation.get("standalone", []) if r["rc"] != 0), "")
+        add("validate", "Policy passes cf-promises standalone", 0, first or "no policy found")
+
+    unknown = sysvars["unknown"]
+    add("sys_vars", "No hallucinated sys.* variables", 0 if unknown else 1,
+        "unknown: " + ", ".join("sys." + u for u in unknown) if unknown
+        else "clean (%d referenced)" % len(sysvars["referenced"]))
+
+    said = CASE_SENSITIVE_RE.search(response)
+    add("answers_question", "Says class matching is case-sensitive", 1 if said else 0,
+        "says: \"%s\"" % said.group(0) if said else "never says classes are case-sensitive")
+
+    body = strip_comments(policy_text)
+    fns = sorted(set(m.group(0).split("(")[0].strip() for m in CASE_FN_RE.finditer(body)))
+    add("normalizes_case", "Normalizes casing with string_downcase/string_upcase",
+        1 if fns else 0, ", ".join(fns) if fns else "no casing function used")
+
+    # ifvarclass is the deprecated spelling of if; both behave the same.
+    n_old, n_new = len(IFVARCLASS_RE.findall(body)), len(IF_RE.findall(body))
+    add("prefers_if", "Uses if => rather than deprecated ifvarclass", 0 if n_old else 1,
+        "%d ifvarclass, %d if" % (n_old, n_new))
+
+    vs = fn["variants"] if fn and fn.get("ran") else []
+    n = len(case["expect"]["variants"])
+    any_applies = any(v["applies"] for v in vs)
+    for fc in case["expect"]["functional_checks"]:
+        items = set(fc["items"])
+        if not vs:
+            add(fc["id"], fc["label"], 0, (fn or {}).get("status", "not run"))
+            continue
+        if fc.get("gate") == "any_applies" and not any_applies:
+            # A policy that reports nothing would pass a negative control for free.
+            add(fc["id"], fc["label"], 0, "nothing ever reported")
+            continue
+        if fc["mode"] == "no_unexpected":
+            bad = [v for v in vs if items & set(v["unexpected"])]
+        else:
+            bad = [v for v in vs if items & (set(v["missing"]) | set(v["unexpected"]))]
+        good = n - len(bad)
+        detail = "%d of %d data variants" % (good, n)
+        if fc["id"] == "hard_classes_intact":
+            detail += ", run on " + fn["weekday"]
+        if bad:
+            detail += "; failed: " + ", ".join(v["label"] for v in bad)
+        # "all": one variant is the only one that can expose the bug, so a
+        # proportional score would all but hide it.
+        add(fc["id"], fc["label"], (good == n) if fc.get("scoring") == "all" else good / n,
+            detail)
+
+    total = sum(c["earned"] for c in checks)
+    return checks, round(total, 1), sum(c["weight"] for c in checks)
+
+
 def score(case, validation, sysvars, patterns):
     w = case["weights"]
     need = case.get("expect", {}).get("min_tunables", 3)
@@ -447,8 +578,19 @@ def main():
     validation = validate(root, cf_paths, args.stdlib)
     sysvars = check_sys_vars(policy_text, known)
     patterns = check_patterns(policy_text, aug_paths)
-    functional = functional_check(root, cf_paths, patterns, args.stdlib) if args.functional else None
-    checks, total, maxscore = score(case, validation, sysvars, patterns)
+    casing = None
+    if case.get("grader") == "casing":
+        # The run is the point of this case, so it is not gated on --functional;
+        # like the augments check it only ever evaluates inside the container.
+        response = (variant_dir / "response.md").read_text(errors="replace") \
+            if (variant_dir / "response.md").exists() else ""
+        functional = None
+        casing = casing_check(root, cf_paths, case, args.stdlib)
+        checks, total, maxscore = score_casing(case, validation, sysvars, response,
+                                               policy_text, casing)
+    else:
+        functional = functional_check(root, cf_paths, patterns, args.stdlib) if args.functional else None
+        checks, total, maxscore = score(case, validation, sysvars, patterns)
 
     meta = {}
     meta_file = variant_dir / "meta.json"
@@ -471,6 +613,7 @@ def main():
         "sys_vars": sysvars,
         "patterns": patterns,
         "functional": functional,
+        "casing": casing,
         "checks": checks,
         "score": total,
         "max_score": maxscore,
