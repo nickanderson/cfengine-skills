@@ -32,6 +32,16 @@ btn.addEventListener('click', () => {
 """
 
 
+
+def skill_of_case(results_dir, case):
+    """case.json "skill", defaulting as run-eval.sh does."""
+    import json as _json
+    f = Path(results_dir).resolve().parent / "cases" / case / "case.json"
+    try:
+        return _json.loads(f.read_text()).get("skill", "cfengine-policy")
+    except (OSError, ValueError):
+        return "cfengine-policy"
+
 def load(history_paths, case):
     rows, info_by_run = [], {}
     for hp in history_paths:
@@ -229,7 +239,8 @@ def main():
     keys = [ruler_of(info_by_run.get(r, {}), rubrics.get(r)) for r in runs]
     n_rulers = len({k for k in keys})
 
-    body = ['<h1>cfengine-policy skill &mdash; full history</h1>',
+    skill = skill_of_case(Path(__file__).resolve().parent.parent / "results", args.case)
+    body = ['<h1>%s skill &mdash; full history</h1>' % e(skill),
             '<p class="sub">every recorded run of <code>%s</code>, oldest first &middot; '
             'dot = mean, pale bar = spread across that run&rsquo;s repetitions</p>' % e(args.case)]
 
@@ -288,10 +299,10 @@ def main():
 
     doc = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
            '<meta name="viewport" content="width=device-width,initial-scale=1">'
-           '<title>cfengine-policy full history</title><style>%s</style></head><body>'
+           '<title>%s full history</title><style>%s</style></head><body>'
            '<button class="toggle">light / dark</button><div id="tt"></div>'
            '<div class="wrap">%s</div><script>%s</script></body></html>'
-           % (CSS, "".join(body), JS))
+           % (e(skill), CSS, "".join(body), JS))
     Path(args.out).write_text(doc)
     print("timeline: %s (%d runs, %d ruler regimes)" % (args.out, len(runs), n_rulers))
 

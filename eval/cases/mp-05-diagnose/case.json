@@ -1,0 +1,58 @@
+{
+  "id": "mp-05-diagnose",
+  "title": "Diagnose host visibility, 1-5",
+  "prompt_file": "prompt.txt",
+  "skill": "mission-portal",
+  "grader": "mission-portal",
+  "grader_task": "diagnose",
+  "system_prompt": "lib/mp-system-prompt.txt",
+  "env": [
+    "MP_URL",
+    "MP_USER",
+    "MP_PASSWORD"
+  ],
+  "secret_env": [
+    "MP_PASSWORD"
+  ],
+  "expect": {
+    "file": "diagnosis.json",
+    "require_categories": [
+      "agentNotRunRecently",
+      "deletedHostsReport",
+      "hostsUsingSameName"
+    ],
+    "ips": {
+      "host001": "192.168.56.3",
+      "host002": "192.168.56.4",
+      "host003": "192.168.56.5",
+      "hub": "192.168.56.2"
+    },
+    "rbac_user": "alice",
+    "tolerance_s": {
+      "static": 300,
+      "moving_before": 1800,
+      "moving_after": 120
+    }
+  },
+  "weights": {
+    "file_parses": 5,
+    "t1_cause": 8,
+    "t1_hostkey": 2,
+    "t1_last_agent_run": 6,
+    "t1_last_collected": 4,
+    "t2_cause": 8,
+    "t2_hostkey": 2,
+    "t2_still_reporting": 4,
+    "t2_last_report": 6,
+    "t3_cause": 8,
+    "t3_hostkey": 2,
+    "t3_current_hostname": 3,
+    "t3_conflicts_with": 5,
+    "t4_cause": 7,
+    "t4_role": 5,
+    "t4_class": 7,
+    "t5_cause": 10,
+    "t5_caused_by": 8
+  },
+  "rubric_version": 3
+}

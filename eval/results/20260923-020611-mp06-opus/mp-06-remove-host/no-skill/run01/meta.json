@@ -1,0 +1,15 @@
+{
+  "variant": "no-skill",
+  "run": 1,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 218214,
+    "duration_api_ms": 163511,
+    "num_turns": 24,
+    "total_cost_usd": 0.6276168000000001,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "55aa96b67b3091e07f9d79288e9238bec51dd493958ed7a1109a7f71a10e7b0f"
+}

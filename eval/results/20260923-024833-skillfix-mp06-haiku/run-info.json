@@ -1,0 +1,29 @@
+{
+  "timestamp": "20260923-024833",
+  "label": "skillfix-mp06-haiku",
+  "model": "haiku",
+  "runs_per_variant": 3,
+  "variants": "both",
+  "functional": false,
+  "cfengine": "CFEngine Core 3.27.0",
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "platform": "Linux-x86_64",
+  "harness": {
+    "claude_code": "2.1.280 (Claude Code)",
+    "eval_commit": "ab36d7ef0e990efdbc5c2ec526dce12a9016ad62",
+    "eval_dirty": true
+  },
+  "skill_delivery": "installed",
+  "docs": {
+    "branch": "3.27",
+    "commit": "90b3f1c445d86ebb71d2c5d4b1f7d19a4797cffa"
+  },
+  "skill": {
+    "path": "mission-portal/SKILL.md",
+    "commit": "0f250cbb6f1764f9079b2108a91515f7195a305f",
+    "dirty": true,
+    "sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e",
+    "id": "0f250cbb+dirty.3e17662e",
+    "bytes": 17925
+  }
+}

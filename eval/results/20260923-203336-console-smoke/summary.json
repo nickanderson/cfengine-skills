@@ -1,0 +1,103 @@
+{
+  "run_id": "20260923-203336-console-smoke",
+  "info": {
+    "timestamp": "20260923-203336",
+    "label": "console-smoke",
+    "model": "haiku",
+    "runs_per_variant": 1,
+    "variants": "no-skill",
+    "functional": false,
+    "driver": "console",
+    "session_image": "localhost/cfeval-console:9358ca44af52",
+    "session_image_id": "af3da97667fce75c632bdaaffe61644c90a9a70f4006ea3a2c2380efdb0d0ef8",
+    "cfengine": "CFEngine Core 3.27.0",
+    "engine": "container localhost/cfengine-test:3.27.0",
+    "platform": "Linux-x86_64",
+    "harness": {
+      "claude_code": "2.1.281 (Claude Code)",
+      "eval_commit": "36759a653666e0fef9311f1ceceaed960167493d",
+      "eval_dirty": false
+    },
+    "skill_delivery": "installed",
+    "docs": {
+      "branch": "3.27",
+      "commit": "90b3f1c445d86ebb71d2c5d4b1f7d19a4797cffa"
+    },
+    "skill": {
+      "path": "cfengine-policy/SKILL.md",
+      "commit": "062a0afac184b0acc633a1f75c3507dfc37824cd",
+      "dirty": false,
+      "sha256": "9a24317cd345a3df53ea6e13194facaf3a41b86c0e918af30c8440ca4172a86d",
+      "id": "062a0afa",
+      "bytes": 12956
+    }
+  },
+  "cases": {
+    "01-motd": {
+      "no-skill": {
+        "runs": 1,
+        "efficiency": {
+          "turns": {
+            "mean": 4.0,
+            "min": 4,
+            "max": 4
+          },
+          "cost_usd": {
+            "mean": 0.045,
+            "min": 0.045,
+            "max": 0.045
+          },
+          "duration_s": {
+            "mean": 24.353,
+            "min": 24.353,
+            "max": 24.353
+          }
+        },
+        "functional": null,
+        "score_mean": 100.0,
+        "score_min": 100.0,
+        "score_max": 100.0,
+        "max_score": 100,
+        "checks": {
+          "validate": {
+            "label": "Policy passes cf-promises standalone",
+            "weight": 25,
+            "earned_mean": 25.0
+          },
+          "sys_vars": {
+            "label": "No hallucinated sys.* variables",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "tunable_count": {
+            "label": "3 augments tunables present",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "isvariable_pattern": {
+            "label": "ifelse(isvariable(...)) instrumentation",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "qualified_refs": {
+            "label": "Tunables namespaced consistently",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "augments_example": {
+            "label": "def.json augments example provided",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "augments_keys_match": {
+            "label": "def.json keys match policy tunables",
+            "weight": 10,
+            "earned_mean": 10.0
+          }
+        },
+        "cost_usd": 0.0455,
+        "duration_ms": 24353
+      }
+    }
+  }
+}

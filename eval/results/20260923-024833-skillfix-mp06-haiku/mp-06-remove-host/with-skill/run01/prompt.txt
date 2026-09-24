@@ -1,0 +1,13 @@
+Our CFEngine Enterprise hub's Mission Portal is at $MP_URL. Credentials are in
+$MP_USER and $MP_PASSWORD; the certificate is self-signed.
+
+The host decomm01.example.com has been decommissioned. Write an executable
+script, remove-host.sh, that takes a hostname as its only argument and removes
+that host from Mission Portal completely: afterwards it must appear neither in
+the host list nor among deleted hosts, and no other host may be affected.
+
+If no host has exactly that hostname, print an error to stderr, change
+nothing, and exit 1. Exit 0 only once you have verified that the host is
+completely gone.
+
+Run it for decomm01.example.com and include its output in your reply.

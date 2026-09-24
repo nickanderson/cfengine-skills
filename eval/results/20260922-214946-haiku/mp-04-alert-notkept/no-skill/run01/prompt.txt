@@ -1,0 +1,7 @@
+Our CFEngine Enterprise hub's Mission Portal is at $MP_URL. Credentials are in
+$MP_USER and $MP_PASSWORD; the certificate is self-signed.
+
+We want a Mission Portal dashboard alert that triggers for every host where
+any promise was not kept in its most recent agent run. Write the SQL for the
+alert's condition into alert.sql, ready to paste into the alert editor, and
+check it against the hub before you hand it over.

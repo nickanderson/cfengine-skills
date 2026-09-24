@@ -1,0 +1,96 @@
+{
+  "variant": "no-skill",
+  "run": 2,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 276764,
+    "duration_api_ms": 259443,
+    "num_turns": 24,
+    "total_cost_usd": 0.5922536,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "626f6b5e686fab4221dbebcbd30a36730973bb4eb9c21b081094ed3b51b291a7",
+  "case": "mp-04-alert-notkept",
+  "case_title": "Custom-SQL alert condition: hosts with a promise not kept",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "alert.sql"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "alert.sql",
+    "exit_code": 0,
+    "stdout": "-- Mission Portal alert: hosts with a promise not kept in their most recent agent run.\n--\n-- promiselog only ever contains REPAIRED/NOTKEPT entries (kept promises are\n-- never logged), and entries from the same run can differ by a few seconds\n-- (each promise is timestamped when it was evaluated, not with one shared\n-- run start time). So \"most recent run\" is approximated as: all promiselog\n-- rows for a host within 120 seconds of that host's latest logged entry.\n-- 120s is comfortably below typical agent run intervals (minutes) while\n-- covering normal in-run timestamp jitter.\n--\n-- Note: no trailing semicolon -- the Mission Portal query API rejects it.\nSELECT DISTINCT h.hostname, h.hostkey\nFROM promiselog p\nJOIN hosts h ON h.hostkey = p.hostkey\nWHERE p.promiseoutcome = 'NOTKEPT'\n  AND p.changetimestamp >= (\n        SELECT MAX(p2.changetimestamp) - INTERVAL '120 seconds'\n        FROM promiselog p2\n        WHERE p2.hostkey = p.hostkey\n      )\nORDER BY h.hostname",
+    "stderr": "",
+    "expected": [
+      "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940"
+    ],
+    "got": [
+      "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940"
+    ]
+  },
+  "checks": [
+    {
+      "id": "sql_present",
+      "label": "Condition written to alert.sql",
+      "weight": 5,
+      "earned": 5,
+      "detail": "alert.sql"
+    },
+    {
+      "id": "runs_standalone",
+      "label": "Runs as-is through /api/query (alert status)",
+      "weight": 10,
+      "earned": 10,
+      "detail": "1 rows"
+    },
+    {
+      "id": "host_list_wrap",
+      "label": "Survives Mission Portal's host-list wrapper",
+      "weight": 20,
+      "earned": 20,
+      "detail": "joins on a hostkey column"
+    },
+    {
+      "id": "one_row_per_host",
+      "label": "One row per host (status counts rows)",
+      "weight": 15,
+      "earned": 15,
+      "detail": "1 rows, 1 distinct hostkeys"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host sharing a hostname triggers",
+      "weight": 20,
+      "earned": 20.0,
+      "detail": "1 of 1"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No other host triggers",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "1 of 1 returned are duplicates"
+    },
+    {
+      "id": "current_state",
+      "label": "Uses current-state views, not history or base tables",
+      "weight": 15,
+      "earned": 0,
+      "detail": "uses: promiselog"
+    }
+  ],
+  "score": 85.0,
+  "max_score": 100
+}

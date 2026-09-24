@@ -172,9 +172,12 @@ def chart(case, series, labels, maxscore):
             out.append('<circle cx="%.1f" cy="%.1f" r="4" fill="%s" stroke="var(--surface-1)" '
                        'stroke-width="2"/>' % (x, y, col))
         if pts:
+            # Label the last point drawn, not vals[-1]: a --variant run leaves
+            # the other series None at the newest position.
             x, y = pts[-1]
+            last = [v for v in vals if v is not None][-1]
             out.append('<text x="%.1f" y="%.1f" font-size="12" font-weight="600" fill="%s">%s %.0f</text>'
-                       % (x + 10, y + 4, col, e(SERIES[variant]["label"]), vals[-1]))
+                       % (x + 10, y + 4, col, e(SERIES[variant]["label"]), last))
 
     hover = []
     for i, lab in enumerate(labels):
@@ -235,6 +238,27 @@ def legend():
                       % ("var(--s1)" if a == "with-skill" else "var(--s2)", SERIES[a]["label"])
                       for a in VARIANTS)
             + "</div>")
+
+
+def efficiency_tile(variant, a):
+    ef = a["efficiency"]
+    t, c, d = ef["turns"], ef["cost_usd"], ef["duration_s"]
+    spread = "" if a["runs"] < 2 else "%.0f&ndash;%.0f turns &middot; " % (t["min"], t["max"])
+    col = "var(--s1)" if variant == "with-skill" else "var(--s2)"
+    return ('<div class="tile"><div class="k"><span class="swatch" style="background:%s"></span>'
+            '%s effort</div><div class="v">%.0f<span class="m"> turns</span></div>'
+            '<div class="m">%s$%.2f &middot; %.1f min per run</div></div>'
+            % (col, SERIES[variant]["label"], t["mean"], spread, c["mean"] or 0,
+               (d["mean"] or 0) / 60.0))
+
+
+def efficiency_delta_tile(delta):
+    # Lower is better here, the opposite of the score delta.
+    t = delta.get("turns", 0)
+    cls = "pass" if t < 0 else ("fail" if t > 0 else "detail")
+    return ('<div class="tile"><div class="k">Effort delta</div><div class="v %s">%+.0f'
+            '<span class="m"> turns</span></div><div class="m">%+.2f USD &middot; %+.1f min per run</div></div>'
+            % (cls, t, delta.get("cost_usd", 0), delta.get("duration_s", 0) / 60.0))
 
 
 def variant_detail(run_dir, case, variant):
@@ -302,7 +326,9 @@ def main():
                     pass
 
     body = []
-    body.append('<h1>cfengine-policy skill eval</h1>')
+    # run-info records which skill this run measured (one skill per run)
+    skill_name = Path(skill.get("path", "cfengine-policy/SKILL.md")).parts[0]
+    body.append('<h1>%s skill eval</h1>' % e(skill_name))
     harness = info.get("harness", {})
     body.append('<p class="sub">%s &middot; model <code>%s</code> &middot; skill <code>%s</code>%s '
                 '&middot; %s</p>'
@@ -349,6 +375,13 @@ def main():
                   if variants.get(a) and variants[a].get("functional")]
         if ftiles:
             body.append('<div class="tiles" style="margin-top:14px">%s</div>' % "".join(ftiles))
+
+        etiles = [efficiency_tile(a, variants[a]) for a in VARIANTS
+                  if variants.get(a) and (variants[a].get("efficiency") or {}).get("turns", {}).get("mean") is not None]
+        if "efficiency_delta" in variants:
+            etiles.append(efficiency_delta_tile(variants["efficiency_delta"]))
+        if etiles:
+            body.append('<div class="tiles" style="margin-top:14px">%s</div>' % "".join(etiles))
 
         ref = variants.get("with-skill") or variants.get("no-skill")
         rows = []
@@ -412,10 +445,10 @@ def main():
 
     doc = ("<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
            "<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">"
-           "<title>cfengine-policy eval %s</title><style>%s</style></head><body>"
+           "<title>%s eval %s</title><style>%s</style></head><body>"
            "<button class=\"toggle\">light / dark</button><div id=\"tt\"></div>"
            "<div class=\"wrap\">%s</div><script>%s</script></body></html>"
-           % (e(run_dir.name), CSS, "".join(body), JS))
+           % (e(skill_name), e(run_dir.name), CSS, "".join(body), JS))
     Path(args.out).write_text(doc)
     print("report: %s" % args.out)
 

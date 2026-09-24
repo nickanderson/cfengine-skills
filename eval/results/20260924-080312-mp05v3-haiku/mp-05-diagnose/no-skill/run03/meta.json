@@ -1,0 +1,22 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 229705,
+    "duration_api_ms": 206000,
+    "num_turns": 33,
+    "total_cost_usd": 0.379,
+    "is_error": false,
+    "subtype": "success",
+    "usage": {
+      "input_tokens": 265,
+      "cache_creation_input_tokens": 51873,
+      "cache_read_input_tokens": 1465349,
+      "output_tokens": 25347
+    },
+    "driver": "console"
+  },
+  "skill_sha256": "4c35279c6e342b0fd8cc319dfe4aca7b889fa02053425280c5e869ddb175c5f9"
+}

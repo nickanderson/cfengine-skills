@@ -1,0 +1,31 @@
+{
+  "id": "mp-07-reinstalled",
+  "title": "Find the leftover records of reinstalled hosts",
+  "prompt_file": "prompt.txt",
+  "skill": "mission-portal",
+  "grader": "mission-portal",
+  "grader_task": "stale_records",
+  "system_prompt": "lib/mp-system-prompt.txt",
+  "env": [
+    "MP_URL",
+    "MP_USER",
+    "MP_PASSWORD"
+  ],
+  "secret_env": [
+    "MP_PASSWORD"
+  ],
+  "expect": {
+    "script": "stale-records.sh",
+    "decoy_hostname": "hub.example.com"
+  },
+  "weights": {
+    "script_present": 5,
+    "runs_clean": 10,
+    "output_parses": 10,
+    "stale_recall": 25,
+    "no_live_listed": 25,
+    "current_correct": 15,
+    "api_only": 10
+  },
+  "rubric_version": 1
+}

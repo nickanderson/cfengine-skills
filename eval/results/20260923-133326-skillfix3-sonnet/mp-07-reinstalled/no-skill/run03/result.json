@@ -1,0 +1,96 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 123329,
+    "duration_api_ms": 119842,
+    "num_turns": 10,
+    "total_cost_usd": 0.2599372,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e",
+  "case": "mp-07-reinstalled",
+  "case_title": "Find the leftover records of reinstalled hosts",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "stale-records.sh"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "stale-records.sh",
+    "exit_code": 0,
+    "stdout": "SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4,SHA=06791f18efa2b15c5c71bcf452fa923126533938734039f0645e9f23694d24c5,host004.example.com,192.168.56.6\n",
+    "stderr": "",
+    "expected": [
+      "SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4,SHA=06791f18efa2b15c5c71bcf452fa923126533938734039f0645e9f23694d24c5"
+    ],
+    "got": [
+      "SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4,SHA=06791f18efa2b15c5c71bcf452fa923126533938734039f0645e9f23694d24c5"
+    ]
+  },
+  "checks": [
+    {
+      "id": "script_present",
+      "label": "Script stale-records.sh written",
+      "weight": 5,
+      "earned": 5,
+      "detail": "stale-records.sh"
+    },
+    {
+      "id": "runs_clean",
+      "label": "Script exits 0 against the hub",
+      "weight": 10,
+      "earned": 10,
+      "detail": "rc=0"
+    },
+    {
+      "id": "output_parses",
+      "label": "Every line is <stale>,<current>,<hostname>,<ip>",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "1/1 lines parse"
+    },
+    {
+      "id": "stale_recall",
+      "label": "Every leftover record found",
+      "weight": 25,
+      "earned": 25.0,
+      "detail": "1 of 1"
+    },
+    {
+      "id": "no_live_listed",
+      "label": "No live record listed as leftover (hub.example.com is two live machines)",
+      "weight": 25,
+      "earned": 25,
+      "detail": "ok"
+    },
+    {
+      "id": "current_correct",
+      "label": "Current record named correctly",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "1 of 1"
+    },
+    {
+      "id": "api_only",
+      "label": "Answers through the REST API only",
+      "weight": 10,
+      "earned": 10,
+      "detail": "uses /api"
+    }
+  ],
+  "score": 100.0,
+  "max_score": 100
+}

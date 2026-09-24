@@ -1,0 +1,29 @@
+{
+  "timestamp": "20260923-012244",
+  "label": "opus-01-02-04",
+  "model": "opus",
+  "runs_per_variant": 3,
+  "variants": "both",
+  "functional": false,
+  "cfengine": "CFEngine Core 3.27.0",
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "platform": "Linux-x86_64",
+  "harness": {
+    "claude_code": "2.1.280 (Claude Code)",
+    "eval_commit": "b0fb4a3d9e11c5565006baee9cb9853ae9e51322",
+    "eval_dirty": true
+  },
+  "skill_delivery": "installed",
+  "docs": {
+    "branch": "3.27",
+    "commit": "90b3f1c445d86ebb71d2c5d4b1f7d19a4797cffa"
+  },
+  "skill": {
+    "path": "mission-portal/SKILL.md",
+    "commit": "0f250cbb6f1764f9079b2108a91515f7195a305f",
+    "dirty": false,
+    "sha256": "55aa96b67b3091e07f9d79288e9238bec51dd493958ed7a1109a7f71a10e7b0f",
+    "id": "0f250cbb",
+    "bytes": 15907
+  }
+}

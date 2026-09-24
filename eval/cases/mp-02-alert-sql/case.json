@@ -1,0 +1,26 @@
+{
+  "id": "mp-02-alert-sql",
+  "title": "Custom-SQL alert condition: hosts sharing a hostname",
+  "prompt_file": "prompt.txt",
+  "skill": "mission-portal",
+  "grader": "mission-portal",
+  "grader_task": "alert_sql",
+  "system_prompt": "lib/mp-system-prompt.txt",
+  "env": ["MP_URL", "MP_USER", "MP_PASSWORD"],
+  "secret_env": ["MP_PASSWORD"],
+  "expect": {
+    "sql_file": "alert.sql",
+    "truth_sql": "SELECT hostkey FROM hosts WHERE hostname IN (SELECT hostname FROM hosts GROUP BY hostname HAVING count(*) > 1)",
+    "min_truth_hosts": 2
+  },
+  "weights": {
+    "sql_present": 5,
+    "runs_standalone": 10,
+    "host_list_wrap": 20,
+    "one_row_per_host": 15,
+    "hosts_recall": 20,
+    "hosts_precision": 15,
+    "current_state": 15
+  },
+  "rubric_version": 1
+}
