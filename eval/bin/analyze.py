@@ -418,6 +418,36 @@ def score(case, validation, sysvars, patterns):
     return checks, round(total, 1), sum(c["weight"] for c in checks)
 
 
+def analyze_mission_portal(case, variant_dir):
+    """No policy to validate: the live hub is the oracle. See grade_mp.py."""
+    import grade_mp
+    checks, total, maxscore, detail = grade_mp.grade(case, variant_dir)
+    meta_file = variant_dir / "meta.json"
+    result = json.loads(meta_file.read_text()) if meta_file.exists() else {}
+    script = [detail["script"]] if detail["script"] else []
+    result.update({
+        "case": case["id"],
+        "case_title": case.get("title", case["id"]),
+        "rubric_version": case.get("rubric_version", 1),
+        # Shaped like a policy result so report.py can show the script in the
+        # slot it uses for generated policy.
+        "artifacts": {"policy_files": script, "augments_files": [],
+                      "sources": {"policy": "script" if script else "none"},
+                      "policy_bytes": 0},
+        "engine": "live hub %s" % os.environ.get("MP_URL", "?"),
+        "validation": {},
+        "grader": "mission-portal",
+        "hub": detail,
+        "checks": checks,
+        "score": total,
+        "max_score": maxscore,
+    })
+    (variant_dir / "result.json").write_text(json.dumps(result, indent=2))
+    print("%-11s score %5.1f/%d  rc=%s  expected=%d  got=%d"
+          % (result.get("variant", "?"), total, maxscore, detail["exit_code"],
+             len(detail["expected"]), len(detail["got"])))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--variant-dir", "--arm-dir", dest="variant_dir",
@@ -439,6 +469,8 @@ def main():
 
     variant_dir = Path(args.variant_dir)
     case = json.loads(Path(args.case_file).read_text())
+    if case.get("grader") == "mission-portal":
+        return analyze_mission_portal(case, variant_dir)
     known = {l.strip() for l in Path(args.sys_vars).read_text().splitlines() if l.strip()}
 
     cf_paths, root, aug_paths, sources = collect(variant_dir)

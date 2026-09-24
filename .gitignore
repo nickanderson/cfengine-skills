@@ -1,2 +1,7 @@
 # Personal Claude Code overrides (holds the eval auto-approve rule)
 .claude/settings.local.json
+
+# Console-driven eval runs: full session transcripts, kept locally only
+eval/results/**/transcript.jsonl
+eval/results/**/console.log
+eval/results/**/screen-final.txt

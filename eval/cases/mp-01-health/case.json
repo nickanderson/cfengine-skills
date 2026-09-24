@@ -1,0 +1,34 @@
+{
+  "id": "mp-01-health",
+  "title": "List the hosts Mission Portal's Health page flags, by category",
+  "prompt_file": "prompt.txt",
+  "skill": "mission-portal",
+  "grader": "mission-portal",
+  "system_prompt": "lib/mp-system-prompt.txt",
+  "env": [
+    "MP_URL",
+    "MP_USER",
+    "MP_PASSWORD"
+  ],
+  "secret_env": [
+    "MP_PASSWORD"
+  ],
+  "expect": {
+    "script": "unhealthy-hosts.sh",
+    "require_categories": [
+      "agentNotRunRecently",
+      "deletedHostsReport",
+      "hostsUsingSameName"
+    ]
+  },
+  "weights": {
+    "script_present": 5,
+    "runs_clean": 15,
+    "output_parses": 10,
+    "hosts_recall": 25,
+    "hosts_precision": 15,
+    "categories_correct": 20,
+    "api_only": 10
+  },
+  "rubric_version": 2
+}

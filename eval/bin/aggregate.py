@@ -18,6 +18,28 @@ def mean(xs):
     return round(statistics.fmean(xs), 1) if xs else 0.0
 
 
+# The score says whether the answer was right; these say what it cost to get
+# there. Kept out of the score on purpose: a right-but-slow answer and a
+# fast-but-partly-wrong one must not be able to trade places. On a case the
+# unaided model can solve by exploring (mp-01-health), the skill's effect shows
+# up here and nowhere else.
+EFFICIENCY = {
+    "turns": lambda cli: cli.get("num_turns"),
+    "cost_usd": lambda cli: cli.get("total_cost_usd"),
+    "duration_s": lambda cli: (cli.get("duration_ms") or 0) / 1000.0 if cli.get("duration_ms") else None,
+}
+
+
+def efficiency(rs):
+    out = {}
+    for name, get in EFFICIENCY.items():
+        vals = [v for v in (get(r.get("cli") or {}) for r in rs) if v is not None]
+        out[name] = {"mean": round(statistics.fmean(vals), 3) if vals else None,
+                     "min": round(min(vals), 3) if vals else None,
+                     "max": round(max(vals), 3) if vals else None}
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", required=True)
@@ -65,6 +87,7 @@ def main():
             }
         agg = {
             "runs": len(rs),
+            "efficiency": efficiency(rs),
             "functional": functional,
             "score_mean": mean(scores),
             "score_min": min(scores),
@@ -97,11 +120,17 @@ def main():
             "score_max": agg["score_max"],
             "max_score": agg["max_score"],
             "checks": {k: v["earned_mean"] for k, v in checks.items()},
+            # Flattened for timeline/compare, which read only history rows.
+            **{"%s_%s" % (m, k): v for m, st in agg["efficiency"].items() for k, v in st.items()},
         })
 
     for case, variants in summary["cases"].items():
         if "with-skill" in variants and "no-skill" in variants:
             variants["delta"] = round(variants["with-skill"]["score_mean"] - variants["no-skill"]["score_mean"], 1)
+            w, n = variants["with-skill"]["efficiency"], variants["no-skill"]["efficiency"]
+            variants["efficiency_delta"] = {m: round(w[m]["mean"] - n[m]["mean"], 3)
+                                            for m in w if m in n and w[m]["mean"] is not None
+                                            and n[m]["mean"] is not None}
     (run_dir / "summary.json").write_text(json.dumps(summary, indent=2))
 
     hist = Path(args.history)
@@ -124,6 +153,10 @@ def main():
         parts = ["%s %.1f" % (a, variants[a]["score_mean"]) for a in ("no-skill", "with-skill") if a in variants]
         if "delta" in variants:
             parts.append("delta %+.1f" % variants["delta"])
+        for a in ("no-skill", "with-skill"):
+            ef = (variants.get(a) or {}).get("efficiency") or {}
+            if ef.get("turns", {}).get("mean") is not None:
+                parts.append("%s %.0f turns $%.2f" % (a, ef["turns"]["mean"], ef["cost_usd"]["mean"] or 0))
         print("aggregate: %-14s %s" % (case, "  ".join(parts)))
 
 
