@@ -1,0 +1,22 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 392625,
+    "duration_api_ms": 341000,
+    "num_turns": 47,
+    "total_cost_usd": 1.17,
+    "is_error": false,
+    "subtype": "success",
+    "usage": {
+      "input_tokens": 94,
+      "cache_creation_input_tokens": 72234,
+      "cache_read_input_tokens": 2705874,
+      "output_tokens": 31828
+    },
+    "driver": "console"
+  },
+  "skill_sha256": "4c35279c6e342b0fd8cc319dfe4aca7b889fa02053425280c5e869ddb175c5f9"
+}

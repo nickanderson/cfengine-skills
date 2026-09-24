@@ -1,0 +1,94 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 170483,
+    "duration_api_ms": 156935,
+    "num_turns": 57,
+    "total_cost_usd": 0.38041130000000006,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "626f6b5e686fab4221dbebcbd30a36730973bb4eb9c21b081094ed3b51b291a7",
+  "case": "mp-04-alert-notkept",
+  "case_title": "Custom-SQL alert condition: hosts with a promise not kept",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "alert.sql"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "alert.sql",
+    "exit_code": 0,
+    "stdout": "-- Alert: Hosts with promises not kept in most recent agent run\n-- Identifies all hosts with NOT KEPT promises by checking for entries in the\n-- NOTKEPT promise logs for hosts that have reported status.\n\nWITH latest_status AS (\n    -- Get the most recent status report timestamp for each host\n    SELECT host, MAX(ts) as latest_ts FROM Status GROUP BY host\n)\nSELECT DISTINCT latest_status.host\nFROM latest_status\nWHERE EXISTS (\n    -- Check if this host has any NOT KEPT promises in recent logs\n    SELECT 1 FROM (\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-25\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-24\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-23\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-22\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-21\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-20\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-19\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-18\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-17\"\n        UNION ALL\n        SELECT hostkey, changetimestamp FROM \"__promiselog_NOTKEPT_2026-09-16\"\n    ) AS recent_notkept\n    WHERE hostkey = latest_status.host\n)",
+    "stderr": "HTTP 500: An error occurred while querying the database.",
+    "expected": [
+      "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940"
+    ],
+    "got": []
+  },
+  "checks": [
+    {
+      "id": "sql_present",
+      "label": "Condition written to alert.sql",
+      "weight": 5,
+      "earned": 5,
+      "detail": "alert.sql"
+    },
+    {
+      "id": "runs_standalone",
+      "label": "Runs as-is through /api/query (alert status)",
+      "weight": 10,
+      "earned": 10,
+      "detail": "1 rows"
+    },
+    {
+      "id": "host_list_wrap",
+      "label": "Survives Mission Portal's host-list wrapper",
+      "weight": 20,
+      "earned": 0,
+      "detail": "HTTP 500: An error occurred while querying the database."
+    },
+    {
+      "id": "one_row_per_host",
+      "label": "One row per host (status counts rows)",
+      "weight": 15,
+      "earned": 0,
+      "detail": "no hostkey column"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host sharing a hostname triggers",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 1"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No other host triggers",
+      "weight": 15,
+      "earned": 0,
+      "detail": "0 of 0 returned are duplicates"
+    },
+    {
+      "id": "current_state",
+      "label": "Uses current-state views, not history or base tables",
+      "weight": 15,
+      "earned": 0,
+      "detail": "uses: __promiselog_NOTKEPT_2026"
+    }
+  ],
+  "score": 15.0,
+  "max_score": 100
+}

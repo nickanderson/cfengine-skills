@@ -1,0 +1,33 @@
+FINDINGS FROM MISSION PORTAL API INVESTIGATION
+
+Scenario 1: host001 (192.168.56.3) - Stale Data
+- Hostkey: SHA=73391bc3fefecd394b294f8e29b6f1efe1007de652d7479da654542b08d8153f  
+- Last agent execution: 2026-09-24 03:36:36+00 (status: FAIL)
+- Last collection by hub: 2026-09-24 13:15:53+00
+- Root cause: Agent's policy is failing on this host
+- The data appears stale because the agent hasn't run successfully in 10+ hours
+
+Scenario 2: host002 (192.168.56.4) - Deleted But Still Reporting
+- Hostkey: SHA=d2224f7767ee9f3c7a6f7372b8096a4422e9331032976d2be95bd6fc126387dd
+- Deleted from Mission Portal: 2026-09-22 22:07:21
+- Last report attempt: 2026-09-24 13:13:53
+- Root cause: Host was deleted but its agent is still running and reporting to the hub
+- Health page shows it under "Deleted hosts" category
+
+Scenario 3: host003 (192.168.56.5) - Missing/Hidden  
+- Host is now reporting as: hub.example.com with IP 192.168.56.5
+- Hostkey: SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5
+- Root cause: host003 changed its hostname to "hub.example.com"
+- This creates a duplicate hostname conflict with the actual hub at 192.168.56.2
+
+Scenario 4: Alice Can't See host001
+- host001 exists and is visible to current user
+- host001 is in "agentNotRunRecently" health category
+- Root cause: RBAC filtering - Alice's role has excludeContext or insufficient includeContext
+- Most likely class: A class related to operational status that Alice's role excludes
+
+Scenario 5: Hub Listed on Health Page
+- The actual hub: SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940 at 192.168.56.2
+- Duplicate hub entry: SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5 at 192.168.56.5
+- Root cause: host003 (192.168.56.5) is reporting as "hub.example.com"
+- This creates the "Duplicate hostnames" health issue, causing hub to appear flagged

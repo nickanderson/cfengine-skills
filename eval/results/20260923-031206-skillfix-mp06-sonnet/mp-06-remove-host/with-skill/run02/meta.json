@@ -1,0 +1,15 @@
+{
+  "variant": "with-skill",
+  "run": 2,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 114167,
+    "duration_api_ms": 110601,
+    "num_turns": 8,
+    "total_cost_usd": 0.27687799999999996,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e"
+}

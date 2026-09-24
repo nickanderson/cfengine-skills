@@ -1,0 +1,12 @@
+{
+  "classes": {
+    "true_enabled": [
+      "any"
+    ]
+  },
+  "vars": {
+    "motd_enabled": "true",
+    "motd_file": "/etc/motd",
+    "motd_content": "Welcome to Production Server\n\nFor administrative issues, contact: admin@example.com\n\nUnauthorized access is prohibited."
+  }
+}

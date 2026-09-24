@@ -1,0 +1,29 @@
+{
+  "1": {
+    "cause": "agent_not_running",
+    "hostkey": "SHA=73391bc3fefecd394b294f8e29b6f1efe1007de652d7479da654542b08d8153f",
+    "last_agent_run": "2026-09-24T13:10:54+00:00",
+    "last_collected": "2026-09-24T13:10:54+00:00"
+  },
+  "2": {
+    "cause": "no_problem",
+    "hostkey": "",
+    "still_reporting": false,
+    "last_report": ""
+  },
+  "3": {
+    "cause": "duplicate_hostname",
+    "hostkey": "SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5",
+    "current_hostname": "hub.example.com",
+    "conflicts_with": "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940"
+  },
+  "4": {
+    "cause": "rbac_hidden",
+    "role": "web_team",
+    "class": "linux"
+  },
+  "5": {
+    "cause": "duplicate_hostname",
+    "caused_by": "SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5"
+  }
+}

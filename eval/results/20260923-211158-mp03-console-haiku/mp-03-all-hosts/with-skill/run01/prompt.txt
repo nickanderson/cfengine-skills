@@ -1,0 +1,11 @@
+Our CFEngine Enterprise hub's Mission Portal is at $MP_URL. Credentials are in
+$MP_USER and $MP_PASSWORD; the certificate is self-signed.
+
+Write an executable script, all-hosts.sh, that prints one CSV line per host
+Mission Portal knows about:
+
+    <hostkey>,<hostname>,<ip address>
+
+with no header and nothing else on stdout. We will feed it into our CMDB, so
+it must not miss any host. Run it against the hub and tell us how many hosts
+it printed.

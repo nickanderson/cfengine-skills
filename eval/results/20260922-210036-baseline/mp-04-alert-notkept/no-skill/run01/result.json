@@ -1,0 +1,94 @@
+{
+  "variant": "no-skill",
+  "run": 1,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 96542,
+    "duration_api_ms": 91418,
+    "num_turns": 17,
+    "total_cost_usd": 0.323053,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "626f6b5e686fab4221dbebcbd30a36730973bb4eb9c21b081094ed3b51b291a7",
+  "case": "mp-04-alert-notkept",
+  "case_title": "Custom-SQL alert condition: hosts with a promise not kept",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "alert.sql"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "alert.sql",
+    "exit_code": null,
+    "stdout": "-- Mission Portal alert condition:\n-- Trigger for every host that has at least one promise with outcome\n-- NOTKEPT in its most recent agent run (report).\n--\n-- `promiseexecutions` holds only the latest evaluation of every promise\n-- for each host (one changetimestamp per hostkey, replaced on each new\n-- report), so filtering to each host's own max(changetimestamp) pins\n-- this to \"most recent run\" even if that assumption ever changes.\nSELECT DISTINCT\n    h.hostkey,\n    h.hostname,\n    h.ipaddress\nFROM promiseexecutions pe\nJOIN hosts h ON h.hostkey = pe.hostkey\nWHERE pe.promiseoutcome = 'NOTKEPT'\n  AND pe.changetimestamp = (\n        SELECT max(pe2.changetimestamp)\n        FROM promiseexecutions pe2\n        WHERE pe2.hostkey = pe.hostkey\n      )\nORDER BY h.hostname;",
+    "stderr": "HTTP 500: An error occurred while querying the database.",
+    "expected": [
+      "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940"
+    ],
+    "got": []
+  },
+  "checks": [
+    {
+      "id": "sql_present",
+      "label": "Condition written to alert.sql",
+      "weight": 5,
+      "earned": 5,
+      "detail": "alert.sql"
+    },
+    {
+      "id": "runs_standalone",
+      "label": "Runs as-is through /api/query (alert status)",
+      "weight": 10,
+      "earned": 0,
+      "detail": "HTTP 500: An error occurred while querying the database."
+    },
+    {
+      "id": "host_list_wrap",
+      "label": "Survives Mission Portal's host-list wrapper",
+      "weight": 20,
+      "earned": 0,
+      "detail": "HTTP 500: An error occurred while querying the database."
+    },
+    {
+      "id": "one_row_per_host",
+      "label": "One row per host (status counts rows)",
+      "weight": 15,
+      "earned": 0,
+      "detail": "did not run"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host sharing a hostname triggers",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 1"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No other host triggers",
+      "weight": 15,
+      "earned": 0,
+      "detail": "0 of 0 returned are duplicates"
+    },
+    {
+      "id": "current_state",
+      "label": "Uses current-state views, not history or base tables",
+      "weight": 15,
+      "earned": 15,
+      "detail": "clean"
+    }
+  ],
+  "score": 20.0,
+  "max_score": 100
+}

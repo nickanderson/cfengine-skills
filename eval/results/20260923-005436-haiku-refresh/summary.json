@@ -1,0 +1,442 @@
+{
+  "run_id": "20260923-005436-haiku-refresh",
+  "info": {
+    "timestamp": "20260923-005436",
+    "label": "haiku-refresh",
+    "model": "haiku",
+    "runs_per_variant": 3,
+    "variants": "both",
+    "functional": false,
+    "cfengine": "CFEngine Core 3.27.0",
+    "engine": "container localhost/cfengine-test:3.27.0",
+    "platform": "Linux-x86_64",
+    "harness": {
+      "claude_code": "2.1.280 (Claude Code)",
+      "eval_commit": "b0fb4a3d9e11c5565006baee9cb9853ae9e51322",
+      "eval_dirty": true
+    },
+    "skill_delivery": "installed",
+    "docs": {
+      "branch": "3.27",
+      "commit": "90b3f1c445d86ebb71d2c5d4b1f7d19a4797cffa"
+    },
+    "skill": {
+      "path": "mission-portal/SKILL.md",
+      "commit": "0f250cbb6f1764f9079b2108a91515f7195a305f",
+      "dirty": false,
+      "sha256": "55aa96b67b3091e07f9d79288e9238bec51dd493958ed7a1109a7f71a10e7b0f",
+      "id": "0f250cbb",
+      "bytes": 15907
+    }
+  },
+  "cases": {
+    "mp-01-health": {
+      "no-skill": {
+        "runs": 3,
+        "efficiency": {
+          "turns": {
+            "mean": 98.333,
+            "min": 60,
+            "max": 131
+          },
+          "cost_usd": {
+            "mean": 0.602,
+            "min": 0.317,
+            "max": 0.769
+          },
+          "duration_s": {
+            "mean": 341.447,
+            "min": 157.821,
+            "max": 616.647
+          }
+        },
+        "functional": null,
+        "score_mean": 37.1,
+        "score_min": 30.0,
+        "score_max": 51.2,
+        "max_score": 100,
+        "checks": {
+          "script_present": {
+            "label": "Script unhealthy-hosts.sh written",
+            "weight": 5,
+            "earned_mean": 5.0
+          },
+          "runs_clean": {
+            "label": "Script exits 0 against the hub",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "output_parses": {
+            "label": "Every stdout line is <category>,<hostkey>",
+            "weight": 10,
+            "earned_mean": 3.3
+          },
+          "hosts_recall": {
+            "label": "Every flagged host listed",
+            "weight": 25,
+            "earned_mean": 2.1
+          },
+          "hosts_precision": {
+            "label": "No healthy host listed",
+            "weight": 15,
+            "earned_mean": 5.0
+          },
+          "categories_correct": {
+            "label": "Each host under the right category",
+            "weight": 20,
+            "earned_mean": 0.0
+          },
+          "api_only": {
+            "label": "Answers through the REST API only",
+            "weight": 10,
+            "earned_mean": 6.7
+          }
+        },
+        "cost_usd": 1.8068,
+        "duration_ms": 1024342
+      },
+      "with-skill": {
+        "runs": 3,
+        "efficiency": {
+          "turns": {
+            "mean": 10.333,
+            "min": 9,
+            "max": 12
+          },
+          "cost_usd": {
+            "mean": 0.091,
+            "min": 0.073,
+            "max": 0.109
+          },
+          "duration_s": {
+            "mean": 50.482,
+            "min": 37.353,
+            "max": 61.137
+          }
+        },
+        "functional": null,
+        "score_mean": 100.0,
+        "score_min": 100.0,
+        "score_max": 100.0,
+        "max_score": 100,
+        "checks": {
+          "script_present": {
+            "label": "Script unhealthy-hosts.sh written",
+            "weight": 5,
+            "earned_mean": 5.0
+          },
+          "runs_clean": {
+            "label": "Script exits 0 against the hub",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "output_parses": {
+            "label": "Every stdout line is <category>,<hostkey>",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "hosts_recall": {
+            "label": "Every flagged host listed",
+            "weight": 25,
+            "earned_mean": 25.0
+          },
+          "hosts_precision": {
+            "label": "No healthy host listed",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "categories_correct": {
+            "label": "Each host under the right category",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "api_only": {
+            "label": "Answers through the REST API only",
+            "weight": 10,
+            "earned_mean": 10.0
+          }
+        },
+        "cost_usd": 0.2715,
+        "duration_ms": 151445
+      },
+      "delta": 62.9,
+      "efficiency_delta": {
+        "turns": -88.0,
+        "cost_usd": -0.511,
+        "duration_s": -290.965
+      }
+    },
+    "mp-02-alert-sql": {
+      "no-skill": {
+        "runs": 3,
+        "efficiency": {
+          "turns": {
+            "mean": 14.333,
+            "min": 7,
+            "max": 23
+          },
+          "cost_usd": {
+            "mean": 0.09,
+            "min": 0.049,
+            "max": 0.129
+          },
+          "duration_s": {
+            "mean": 49.499,
+            "min": 30.567,
+            "max": 60.09
+          }
+        },
+        "functional": null,
+        "score_mean": 100.0,
+        "score_min": 100.0,
+        "score_max": 100.0,
+        "max_score": 100,
+        "checks": {
+          "sql_present": {
+            "label": "Condition written to alert.sql",
+            "weight": 5,
+            "earned_mean": 5.0
+          },
+          "runs_standalone": {
+            "label": "Runs as-is through /api/query (alert status)",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "host_list_wrap": {
+            "label": "Survives Mission Portal's host-list wrapper",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "one_row_per_host": {
+            "label": "One row per host (status counts rows)",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "hosts_recall": {
+            "label": "Every host sharing a hostname triggers",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "hosts_precision": {
+            "label": "No other host triggers",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "current_state": {
+            "label": "Uses current-state views, not history or base tables",
+            "weight": 15,
+            "earned_mean": 15.0
+          }
+        },
+        "cost_usd": 0.2715,
+        "duration_ms": 148496
+      },
+      "with-skill": {
+        "runs": 3,
+        "efficiency": {
+          "turns": {
+            "mean": 7.333,
+            "min": 6,
+            "max": 8
+          },
+          "cost_usd": {
+            "mean": 0.056,
+            "min": 0.051,
+            "max": 0.061
+          },
+          "duration_s": {
+            "mean": 23.545,
+            "min": 19.382,
+            "max": 27.749
+          }
+        },
+        "functional": null,
+        "score_mean": 100.0,
+        "score_min": 100.0,
+        "score_max": 100.0,
+        "max_score": 100,
+        "checks": {
+          "sql_present": {
+            "label": "Condition written to alert.sql",
+            "weight": 5,
+            "earned_mean": 5.0
+          },
+          "runs_standalone": {
+            "label": "Runs as-is through /api/query (alert status)",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "host_list_wrap": {
+            "label": "Survives Mission Portal's host-list wrapper",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "one_row_per_host": {
+            "label": "One row per host (status counts rows)",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "hosts_recall": {
+            "label": "Every host sharing a hostname triggers",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "hosts_precision": {
+            "label": "No other host triggers",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "current_state": {
+            "label": "Uses current-state views, not history or base tables",
+            "weight": 15,
+            "earned_mean": 15.0
+          }
+        },
+        "cost_usd": 0.1686,
+        "duration_ms": 70635
+      },
+      "delta": 0.0,
+      "efficiency_delta": {
+        "turns": -7.0,
+        "cost_usd": -0.034,
+        "duration_s": -25.954
+      }
+    },
+    "mp-04-alert-notkept": {
+      "no-skill": {
+        "runs": 3,
+        "efficiency": {
+          "turns": {
+            "mean": 47.333,
+            "min": 32,
+            "max": 64
+          },
+          "cost_usd": {
+            "mean": 0.341,
+            "min": 0.257,
+            "max": 0.43
+          },
+          "duration_s": {
+            "mean": 227.955,
+            "min": 206.419,
+            "max": 239.86
+          }
+        },
+        "functional": null,
+        "score_mean": 15.0,
+        "score_min": 5.0,
+        "score_max": 20.0,
+        "max_score": 100,
+        "checks": {
+          "sql_present": {
+            "label": "Condition written to alert.sql",
+            "weight": 5,
+            "earned_mean": 5.0
+          },
+          "runs_standalone": {
+            "label": "Runs as-is through /api/query (alert status)",
+            "weight": 10,
+            "earned_mean": 0.0
+          },
+          "host_list_wrap": {
+            "label": "Survives Mission Portal's host-list wrapper",
+            "weight": 20,
+            "earned_mean": 0.0
+          },
+          "one_row_per_host": {
+            "label": "One row per host (status counts rows)",
+            "weight": 15,
+            "earned_mean": 0.0
+          },
+          "hosts_recall": {
+            "label": "Every host sharing a hostname triggers",
+            "weight": 20,
+            "earned_mean": 0.0
+          },
+          "hosts_precision": {
+            "label": "No other host triggers",
+            "weight": 15,
+            "earned_mean": 0.0
+          },
+          "current_state": {
+            "label": "Uses current-state views, not history or base tables",
+            "weight": 15,
+            "earned_mean": 10.0
+          }
+        },
+        "cost_usd": 1.0235,
+        "duration_ms": 683864
+      },
+      "with-skill": {
+        "runs": 3,
+        "efficiency": {
+          "turns": {
+            "mean": 10.0,
+            "min": 7,
+            "max": 12
+          },
+          "cost_usd": {
+            "mean": 0.074,
+            "min": 0.059,
+            "max": 0.084
+          },
+          "duration_s": {
+            "mean": 35.027,
+            "min": 33.176,
+            "max": 37.717
+          }
+        },
+        "functional": null,
+        "score_mean": 100.0,
+        "score_min": 100.0,
+        "score_max": 100.0,
+        "max_score": 100,
+        "checks": {
+          "sql_present": {
+            "label": "Condition written to alert.sql",
+            "weight": 5,
+            "earned_mean": 5.0
+          },
+          "runs_standalone": {
+            "label": "Runs as-is through /api/query (alert status)",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "host_list_wrap": {
+            "label": "Survives Mission Portal's host-list wrapper",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "one_row_per_host": {
+            "label": "One row per host (status counts rows)",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "hosts_recall": {
+            "label": "Every host sharing a hostname triggers",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "hosts_precision": {
+            "label": "No other host triggers",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "current_state": {
+            "label": "Uses current-state views, not history or base tables",
+            "weight": 15,
+            "earned_mean": 15.0
+          }
+        },
+        "cost_usd": 0.222,
+        "duration_ms": 105082
+      },
+      "delta": 85.0,
+      "efficiency_delta": {
+        "turns": -37.333,
+        "cost_usd": -0.267,
+        "duration_s": -192.928
+      }
+    }
+  }
+}

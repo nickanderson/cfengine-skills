@@ -1,0 +1,99 @@
+{
+  "variant": "no-skill",
+  "run": 1,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 185554,
+    "duration_api_ms": 162618,
+    "num_turns": 67,
+    "total_cost_usd": 0.42053559999999995,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "626f6b5e686fab4221dbebcbd30a36730973bb4eb9c21b081094ed3b51b291a7",
+  "case": "mp-01-health",
+  "case_title": "List the hosts Mission Portal's Health page flags, by category",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "unhealthy-hosts.sh"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "unhealthy-hosts.sh",
+    "exit_code": 0,
+    "stdout": "FAIL,SHA=73391bc3fefecd394b294f8e29b6f1efe1007de652d7479da654542b08d8153f\n",
+    "stderr": "",
+    "expected": [
+      "agentNotRunRecently,SHA=73391bc3fefecd394b294f8e29b6f1efe1007de652d7479da654542b08d8153f",
+      "deletedHostsReport,SHA=d2224f7767ee9f3c7a6f7372b8096a4422e9331032976d2be95bd6fc126387dd",
+      "hostsUsingSameName,SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940",
+      "hostsUsingSameName,SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5"
+    ],
+    "got": [
+      "FAIL,SHA=73391bc3fefecd394b294f8e29b6f1efe1007de652d7479da654542b08d8153f"
+    ]
+  },
+  "checks": [
+    {
+      "id": "script_present",
+      "label": "Script unhealthy-hosts.sh written",
+      "weight": 5,
+      "earned": 5,
+      "detail": "unhealthy-hosts.sh"
+    },
+    {
+      "id": "runs_clean",
+      "label": "Script exits 0 against the hub",
+      "weight": 15,
+      "earned": 15,
+      "detail": "rc=0"
+    },
+    {
+      "id": "output_parses",
+      "label": "Every stdout line is <category>,<hostkey>",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "1/1 lines parse"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every flagged host listed",
+      "weight": 25,
+      "earned": 6.25,
+      "detail": "1 of 4 flagged hosts"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No healthy host listed",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "1 of 1 listed are flagged"
+    },
+    {
+      "id": "categories_correct",
+      "label": "Each host under the right category",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 4 (category, host) pairs; unrecognised categories: FAIL"
+    },
+    {
+      "id": "api_only",
+      "label": "Answers through the REST API only",
+      "weight": 10,
+      "earned": 10,
+      "detail": "uses /api"
+    }
+  ],
+  "score": 61.2,
+  "max_score": 100
+}

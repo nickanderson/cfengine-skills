@@ -1,0 +1,29 @@
+{
+  "1": {
+    "cause": "hub_not_collecting",
+    "hostkey": "SHA=4e2b5c8a9f1d3e7a6b2c5f8e9d1a4c6b",
+    "last_agent_run": "2026-09-24T10:15:00+00:00",
+    "last_collected": "2026-09-23T14:30:00+00:00"
+  },
+  "2": {
+    "cause": "host_deleted_still_reporting",
+    "hostkey": "SHA=7f3d2e1a9c4b6e8f5a2d7c9e1b3f4a6d",
+    "still_reporting": true,
+    "last_report": "2026-09-24T12:45:00+00:00"
+  },
+  "3": {
+    "cause": "hostname_changed",
+    "hostkey": "SHA=2a5b8c1f4e7d9a3f6b2e8c5a9d1f3e7a",
+    "current_hostname": "workstation-prod-03",
+    "conflicts_with": ""
+  },
+  "4": {
+    "cause": "rbac_hidden",
+    "role": "viewer",
+    "class": "restricted::production"
+  },
+  "5": {
+    "cause": "no_problem",
+    "caused_by": ""
+  }
+}

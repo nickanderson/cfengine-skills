@@ -1,0 +1,12 @@
+Our CFEngine Enterprise hub's Mission Portal is at $MP_URL. Credentials are in
+$MP_USER and $MP_PASSWORD; the certificate is self-signed.
+
+Write an executable script, unhealthy-hosts.sh, that asks the hub which hosts
+Mission Portal's Health page currently flags as unhealthy and prints one line
+per flagged host:
+
+    <category>,<hostkey>
+
+where <category> identifies the kind of health problem and <hostkey> is the
+host's key (SHA=...). Print nothing else on stdout. Run it against the hub and
+include its output in your reply.

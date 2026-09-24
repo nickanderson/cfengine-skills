@@ -1,0 +1,32 @@
+{
+  "timestamp": "20260923-204819",
+  "label": "mp03-console-sonnet",
+  "model": "sonnet",
+  "runs_per_variant": 3,
+  "variants": "both",
+  "functional": false,
+  "driver": "console",
+  "session_image": "localhost/cfeval-console:9358ca44af52",
+  "session_image_id": "af3da97667fce75c632bdaaffe61644c90a9a70f4006ea3a2c2380efdb0d0ef8",
+  "cfengine": "CFEngine Core 3.27.0",
+  "engine": "container localhost/cfengine-test:3.27.0",
+  "platform": "Linux-x86_64",
+  "harness": {
+    "claude_code": "2.1.281 (Claude Code)",
+    "eval_commit": "36759a653666e0fef9311f1ceceaed960167493d",
+    "eval_dirty": true
+  },
+  "skill_delivery": "installed",
+  "docs": {
+    "branch": "3.27",
+    "commit": "90b3f1c445d86ebb71d2c5d4b1f7d19a4797cffa"
+  },
+  "skill": {
+    "path": "mission-portal/SKILL.md",
+    "commit": "4f8902facdd0ecff6fdf2861795d20e4a3e99758",
+    "dirty": false,
+    "sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e",
+    "id": "4f8902fa",
+    "bytes": 17925
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 246009,
+    "duration_api_ms": 185212,
+    "num_turns": 26,
+    "total_cost_usd": 0.7257022,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "55aa96b67b3091e07f9d79288e9238bec51dd493958ed7a1109a7f71a10e7b0f",
+  "case": "mp-06-remove-host",
+  "case_title": "Remove a decommissioned host from Mission Portal for good",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "remove-host.sh"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "remove-host.sh",
+    "exit_code": 0,
+    "stdout": "Found 1 host(s) named 'decomm01.example.com': SHA=evaldel1790148269x1\nDeleted SHA=evaldel1790148269x1 from host list (HTTP 202)\nPurged SHA=evaldel1790148269x1 from deleted hosts\nVerified: 'decomm01.example.com' is absent from the host list and from deleted hosts.\n\n--- rerun ---\n",
+    "stderr": "ERROR: no host with hostname exactly 'decomm01.example.com' found in Mission Portal; nothing changed\n",
+    "expected": [
+      "remove SHA=evaldel1790148269x1",
+      "keep SHA=evaldel1790148269x2",
+      "keep deleted SHA=d2224f7767"
+    ],
+    "got": [
+      "live: SHA=6bb77202d7 SHA=714a840499 SHA=73391bc3fe SHA=c80bed3864 SHA=evaldel179 SHA=f20cfa67e6",
+      "deleted: SHA=d2224f7767"
+    ]
+  },
+  "checks": [
+    {
+      "id": "script_present",
+      "label": "Script remove-host.sh written",
+      "weight": 5,
+      "earned": 5,
+      "detail": "remove-host.sh"
+    },
+    {
+      "id": "runs_clean",
+      "label": "Exits 0 removing decomm01.example.com",
+      "weight": 10,
+      "earned": 10,
+      "detail": "rc=0"
+    },
+    {
+      "id": "target_not_live",
+      "label": "Target gone from the host list",
+      "weight": 10,
+      "earned": 10,
+      "detail": "gone"
+    },
+    {
+      "id": "target_purged",
+      "label": "Target gone from deleted hosts too (permanently deleted)",
+      "weight": 25,
+      "earned": 25,
+      "detail": "purged"
+    },
+    {
+      "id": "decoy_untouched",
+      "label": "lab-decomm01.example.com untouched",
+      "weight": 20,
+      "earned": 20,
+      "detail": "live"
+    },
+    {
+      "id": "others_untouched",
+      "label": "No other host deleted or purged (host002 stays in deleted hosts)",
+      "weight": 15,
+      "earned": 15,
+      "detail": "ok"
+    },
+    {
+      "id": "missing_host_fails",
+      "label": "Rerun for a host that is gone exits 1 and changes nothing",
+      "weight": 5,
+      "earned": 5,
+      "detail": "rc=1"
+    },
+    {
+      "id": "api_only",
+      "label": "Answers through the REST API only",
+      "weight": 10,
+      "earned": 10,
+      "detail": "uses /api"
+    }
+  ],
+  "score": 100,
+  "max_score": 100
+}
