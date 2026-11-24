@@ -295,6 +295,14 @@ vars:
     "_value" string => "something",
       meta => { "inventory", "attribute_name=My Attribute" };
 ```
+The hub only collects what is tagged `inventory` or `report` (MPF
+`controls/reports.cf`, `default_data_select_host`). Tag variables
+`inventory`. To see a class on the hub, tag it `report`:
+```cfengine3
+classes:
+    "my_condition" expression => "...", scope => "namespace",
+      meta => { "report" };
+```
 
 **Mustache templates -- always pass explicit `template_data`:**
 ```cfengine3
@@ -333,6 +341,9 @@ with only the values the template needs.
 5. **Commands with pipes/redirects need `contain => in_shell`**
 6. **Class names:** alphanumeric + underscore only. Use `canonify()` for dynamic names that can contain invalid characters.
 7. **`strlen()` does not exist** -- the function is `string_length()`
+8. **Don't tag bundles `autorun` unless asked for autorun policy.** The tag
+   makes the bundle run on every host that loads the file; how a bundle is
+   activated (bundlesequence, a cfbs module, autorun) is the user's choice
 
 ## 3-Pass Evaluation
 
