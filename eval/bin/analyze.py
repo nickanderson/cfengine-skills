@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections import defaultdict
 from pathlib import Path
 
 # Identity redaction lives in scrub.py so run-eval.sh can apply the same rules
@@ -312,6 +313,59 @@ def check_patterns(policy_text, aug_paths):
     }
 
 
+PROMISE_TYPE_RE = re.compile(r"^\s*([a-z_]+):\s*$")
+CONTEXT_RE = re.compile(r"^\s*[^\s\"]+::\s*$", re.M)
+PROMISER_RE = re.compile(r'^\s*"([^"]+)"', re.S)
+META_RE = re.compile(r"\bmeta\s*=>\s*\{([^}]*)\}", re.S)
+
+
+def promises_by_type(policy_text):
+    """{promise type: [(promiser, promise text), ...]} for vars and classes
+    promises. Good enough for generated policy: sections start at a bare
+    `type:` line and promises end at `;`."""
+    out, cur, buf = {}, None, []
+
+    def flush():
+        if cur in ("vars", "classes"):
+            for chunk in CONTEXT_RE.sub("", "\n".join(buf)).split(";"):
+                m = PROMISER_RE.match(chunk)
+                if m:
+                    out.setdefault(cur, []).append((m.group(1), chunk))
+
+    for line in strip_comments(policy_text).splitlines():
+        m = PROMISE_TYPE_RE.match(line)
+        if m or line.lstrip().startswith(("bundle ", "body ")) or line.strip() == "}":
+            flush()
+            cur, buf = (m.group(1) if m else None), []
+            continue
+        buf.append(line)
+    flush()
+    return out
+
+
+def check_hub_tags(policy_text):
+    """What reaches the hub: MPF's default_data_select_host collects only what
+    is tagged "inventory" or "report". Variables are expected as "inventory"
+    (with an attribute_name), classes as "report"."""
+    def tags(chunk):
+        m = META_RE.search(chunk)
+        return set(re.findall(r'"([^"]+)"', m.group(1))) if m else set()
+
+    p = promises_by_type(policy_text)
+    inv = [n for n, c in p.get("vars", [])
+           if "inventory" in tags(c) and any(t.startswith("attribute_name=") for t in tags(c))]
+    classes = [(n, tags(c)) for n, c in p.get("classes", [])]
+    return {
+        "inventory_vars": inv,
+        "report_classes": [n for n, t in classes if "report" in t],
+        "other_classes": [n for n, t in classes if "report" not in t],
+        "autorun": bool(AUTORUN_RE.search(strip_comments(policy_text))),
+    }
+
+
+AUTORUN_RE = re.compile(r'"tags"\s+slist\s*=>\s*\{[^}]*"autorun"', re.S)
+
+
 def functional_check(root, cf_paths, patterns, stdlib):
     """Opt-in: dry-run the policy with and without a synthetic def.json and see
     whether the tunables actually change value."""
@@ -351,12 +405,15 @@ def functional_check(root, cf_paths, patterns, stdlib):
     return out
 
 
-def score(case, validation, sysvars, patterns):
-    w = case["weights"]
+def score(case, validation, sysvars, patterns, hub):
+    weighted = case["weights"]
+    w = defaultdict(int, weighted)  # unweighted checks are computed, not recorded
     need = case.get("expect", {}).get("min_tunables", 3)
     checks = []
 
     def add(cid, label, weight, earned, detail):
+        if cid not in weighted:     # a case scores only the checks it weights
+            return
         checks.append({"id": cid, "label": label, "weight": weight,
                        "earned": round(earned, 2), "detail": detail})
 
@@ -414,6 +471,21 @@ def score(case, validation, sysvars, patterns):
     add("augments_keys_match", "def.json keys match policy tunables", w["augments_keys_match"],
         w["augments_keys_match"] * min(n_match, need) / need, "%d matched" % n_match)
 
+    n_inv = len(hub["inventory_vars"])
+    add("inventory_tag", "Variables reach the hub (inventory + attribute_name)", w["inventory_tag"],
+        w["inventory_tag"] if n_inv else 0,
+        ", ".join(hub["inventory_vars"]) if n_inv else "no inventory-tagged variable")
+
+    n_rep = len(hub["report_classes"])
+    add("class_report_tag", "Classes reach the hub (report tag)", w["class_report_tag"],
+        w["class_report_tag"] if n_rep else 0,
+        ("report: " + ", ".join(hub["report_classes"])) if n_rep
+        else "untagged: " + (", ".join(hub["other_classes"]) or "no classes promises"))
+
+    add("no_autorun", "No autorun tag (not asked for)", w["no_autorun"],
+        0 if hub["autorun"] else w["no_autorun"],
+        "bundle tagged autorun" if hub["autorun"] else "none")
+
     total = sum(c["earned"] for c in checks)
     return checks, round(total, 1), sum(c["weight"] for c in checks)
 
@@ -448,7 +520,8 @@ def main():
     sysvars = check_sys_vars(policy_text, known)
     patterns = check_patterns(policy_text, aug_paths)
     functional = functional_check(root, cf_paths, patterns, args.stdlib) if args.functional else None
-    checks, total, maxscore = score(case, validation, sysvars, patterns)
+    hub = check_hub_tags(policy_text)
+    checks, total, maxscore = score(case, validation, sysvars, patterns, hub)
 
     meta = {}
     meta_file = variant_dir / "meta.json"
@@ -470,6 +543,7 @@ def main():
         "validation": validation,
         "sys_vars": sysvars,
         "patterns": patterns,
+        "hub_tags": hub,
         "functional": functional,
         "checks": checks,
         "score": total,

@@ -1,0 +1,1 @@
+Write CFEngine policy that detects a process running an executable from /dev/shm, /tmp or /var/tmp. Report it as an inventory attribute and a class, and don't change anything on the host.

@@ -1,0 +1,13 @@
+{
+  "id": "02-ioc-exec-from-tmp",
+  "title": "IoC: executable running from /dev/shm, /tmp or /var/tmp",
+  "prompt_file": "prompt.txt",
+  "weights": {
+    "validate": 35,
+    "sys_vars": 10,
+    "inventory_tag": 20,
+    "class_report_tag": 25,
+    "no_autorun": 10
+  },
+  "rubric_version": 1
+}
