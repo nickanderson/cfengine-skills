@@ -1,0 +1,1 @@
+Write a CFEngine policy to manage the message of the day. The policy should provide 3 independent variables that are used when managing its content. The variables should be configurable via augments (def.json).

@@ -1,0 +1,22 @@
+{
+  "variant": "with-skill",
+  "run": 3,
+  "model": "opus",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 73324,
+    "duration_api_ms": 62000,
+    "num_turns": 8,
+    "total_cost_usd": 0.4134,
+    "is_error": false,
+    "subtype": "success",
+    "usage": {
+      "input_tokens": 16,
+      "cache_creation_input_tokens": 33130,
+      "cache_read_input_tokens": 261373,
+      "output_tokens": 4717
+    },
+    "driver": "console"
+  },
+  "skill_sha256": "4c35279c6e342b0fd8cc319dfe4aca7b889fa02053425280c5e869ddb175c5f9"
+}

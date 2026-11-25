@@ -1,0 +1,312 @@
+---
+name: mission-portal
+description: >
+  CFEngine Enterprise Mission Portal REST API: querying hosts and inventory,
+  SQL reports, dashboard alerts (custom-SQL conditions), and the Health page's
+  diagnostics. Use when scripting against a CFEngine hub's API, writing report
+  or alert SQL, or finding unhealthy hosts.
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/../scripts/mp-api.sh:*), Bash(${CLAUDE_SKILL_DIR}/../scripts/ensure-docs.sh), Bash(CFENGINE_SKILL_SUBDIR=mission-portal ${CLAUDE_SKILL_DIR}/../scripts/check-skill-update.sh)
+---
+
+```!
+${CLAUDE_SKILL_DIR}/../scripts/mp-api.sh --check
+```
+
+```!
+${CLAUDE_SKILL_DIR}/../scripts/ensure-docs.sh
+```
+
+```!
+CFENGINE_SKILL_SUBDIR=mission-portal ${CLAUDE_SKILL_DIR}/../scripts/check-skill-update.sh
+```
+
+# CFEngine Mission Portal API
+
+Everything marked *(3.27.1)* was verified against a live 3.27.1 hub. The API
+reference is in the documentation checkout: `content/api/enterprise-api-ref/`
+(one file per API) and `content/api/enterprise-api-ref/sql-schema/` (the
+reporting database). Where the docs and this file disagree, this file records
+what the hub actually did -- but check the hub's version (`GET /api/`) first.
+
+## Credentials: never through you
+
+Call the hub through the wrapper. It reads the password from a netrc file, so
+the password never appears in your commands, your output, or the transcript:
+
+```bash
+M=${CLAUDE_SKILL_DIR}/../scripts/mp-api.sh
+$M GET /api/health-diagnostic/status
+$M POST /api/query '{"query":"SELECT hostname FROM hosts"}'
+echo "$body" | $M POST /api/query -          # body from stdin
+```
+
+Exit 0 on 2xx; 2 on an HTTP error (status and body on stderr); 3 on a
+transport failure; 1 when not configured. If the status line above says the
+API is not configured, show the user the setup it printed and let them do it.
+
+- **Never ask the user to paste a password into the conversation**, and never
+  type one into a command: it lands in the transcript.
+- Ask for a **dedicated API user** whose role allows only what the task needs.
+  The REST API does not enforce 2FA, so that password is the whole defence.
+- **Anything that changes the hub needs the user's explicit go-ahead first**:
+  deleting hosts, changing settings, dismissing health issues, triggering agent
+  runs or report collection.
+- For your own calls, skip certificate checks (`insecure=1`) only on a lab hub
+  the user says is disposable. Otherwise pin the hub's own certificate
+  (`cacert=`).
+
+**Scripts you write for the user** run without you and without the wrapper.
+Make them standalone `curl`, taking credentials the way the user asks -- a
+netrc (`curl --netrc-file`) or environment variables -- never hardcoded.
+From environment variables, hand them to curl on stdin rather than as `-u`:
+
+```bash
+printf 'user = "%s:%s"\n' "$MP_USER" "$MP_PASSWORD" | curl -sS -K - "$MP_URL/api/host"
+```
+
+(`printf` is a shell builtin, so nothing shows in `ps`. curl blanks a `-u`
+argument from its own process listing once running, but it is visible
+briefly at start. If stdin is needed for a request body, use
+`--netrc-file <(printf 'machine %s login %s password %s\n' ...)` instead.)
+
+A script must work on the user's hub **as they will run it**, with only what
+they told you they have. If they said the certificate is self-signed and gave
+no certificate file, a script that verifies by default fails on first run
+with curl exit 60. Accept a certificate file (e.g. `MP_CACERT` -> `--cacert`)
+and otherwise use `-k`, and say in your reply that it skips verification until
+they supply the hub's certificate. Test the script with the same environment
+the user will have -- not with variables that only exist in your session.
+Basic auth is the supported method. OAuth (`/api/oauth2/token`) needs the
+hub's internal client secret and is not practical for scripts; the web UI
+login (`/login/index` with a session cookie and CSRF token) is not an API --
+do not script against it.
+
+## Request conventions
+
+- Base path `/api/`. `GET /api` (no slash) answers 301; `GET /api/` returns
+  the hub, core and Enterprise versions and license.
+- **Do not send `Accept: application/json`.** Any Accept header naming it gets
+  406 "Unsupported format or version requested", even alongside `*/*`
+  *(3.27.1)*. Send none (curl's default is fine). Send
+  `Content-Type: application/json` with request bodies.
+- Most responses are `{"data": [...], "meta": {"page", "count", "total", "timestamp"}}`.
+  Not all: `/api/event` and `/api/health-diagnostic/report_ids` return a bare
+  array, `/api/health-diagnostic/status` a bare object *(3.27.1)*.
+- Error bodies are often plain text, not JSON. Check the status before parsing.
+- `/api/host` timestamps (`lastreport`, `firstseen`) are **strings** holding
+  epoch seconds.
+- Settings updates (`POST /api/settings`) reset omitted keys to defaults:
+  GET, merge, then POST.
+
+### Pagination: three vocabularies, silent truncation
+
+| Endpoint | Parameters | Default |
+|---|---|---|
+| `GET /api/host` | `page`, `count` | **50** -- the rest are silently dropped; compare `meta.total` |
+| `POST /api/query` | `skip`, `limit` (body) | no limit *(3.27.1: 20,000 rows came back)* |
+| `POST /api/inventory` | `start`, `limit` (body) | docs say 1000, max 10000; 3.27.1 returned 1123 |
+| `POST /api/health-diagnostic/report/:id` | `skip`, `limit` (body) | |
+| Changes, generic listings | `page`, `count` | 50 |
+
+Whenever a result might be complete-or-nothing (a CMDB feed, "every host"),
+page until you have `meta.total` rows, or use `/api/query` and say so.
+
+## Reports: SQL through `/api/query`
+
+```bash
+$M POST /api/query '{"query": "SELECT hostkey, hostname FROM hosts", "limit": 100}'
+```
+
+Response: `data[0].header` (column names and types), `data[0].rows` (arrays),
+`data[0].rowCount`. Optional body keys: `sortColumn`, `sortDescending`, `skip`,
+`limit`, `hostContextInclude` / `hostContextExclude` (lists of class names).
+Results are filtered to the hosts the calling user may see (RBAC).
+
+**The hub wraps your SQL** before running it *(3.27.1, from the Postgres log)*:
+
+```sql
+WITH user_query AS (<your SQL>) SELECT count(1) OVER() AS total, * FROM user_query
+```
+
+So:
+- **No trailing `;`** -- the most common failure. The API answers HTTP 500 "An
+  error occurred while querying the database", with no detail.
+- **No trailing `--` comment** -- it swallows the closing parenthesis. Leading
+  comments and `/* */` are fine.
+- One SELECT (a CTE is fine); read-only. `EXPLAIN` fails with the same
+  generic 500.
+- Only the reporting database `cfdb` is reachable: not `cfmp` (alerts,
+  dashboards, saved reports) or `cfsettings` (users, roles). Catalog queries
+  (`information_schema`) get 403 "Query accesses restricted database
+  resources" *(3.27.1)*; use the schema table below or
+  `content/api/enterprise-api-ref/sql-schema/cfdb.markdown`.
+
+Long exports: `POST /api/query/async` returns an `id`; poll
+`GET /api/query/async/:id` until `percentageComplete` is 100, then download
+the CSV at `href`.
+
+### The reporting schema
+
+Query the **views**, never the `__`-prefixed base tables behind them. The views
+apply RBAC and drop deleted hosts; the base tables do neither, so they return
+hosts that no longer exist. Timestamps are `timestamptz`: filter with
+`now() - interval '1 hour'`.
+
+| View | One row per | Notes |
+|---|---|---|
+| `hosts` | host | `hostkey, hostname, ipaddress, lastreporttimestamp, firstreporttimestamp`. `hostname` comes from inventory (`Host name`), not from `__hosts` |
+| `agentstatus` | host | `agentexecutioninterval` (learned, seconds), `lastagentlocalexecutiontimestamp`, `lastagentexecutionstatus` (`OK`/`FAIL`) |
+| `variables` | host x variable | current values; `metatags` is `text[]` (`metatags @> '{inventory}'`) |
+| `contexts` | host x class | classes defined at the last run |
+| `software`, `softwareupdates` | host x package | installed / available |
+| `promiseexecutions` | host x promise | last run's outcomes: `KEPT`, `REPAIRED`, `NOTKEPT` |
+| `inventory_new` | host | all inventory attributes as one `jsonb` `values` |
+
+**Current state vs history.** `variableslog`, `contextslog`, `softwarelog`,
+`promiselog`, `filechangeslog` keep every value a host has ever reported. Use
+them only for "when did this change". For "what is it now" -- reports, alerts,
+comparisons -- use the current-state view. History tables return stale rows
+that fan out joins and match hosts that have since changed.
+
+For inventory attributes by their display name, the Inventory API is often
+simpler than SQL: `GET /api/inventory/attributes-dictionary` lists them, and
+
+```json
+POST /api/inventory
+{"select": ["Host name", "OS"], "filter": {"OS": {"matches": "Debian"}}, "limit": 10000}
+```
+
+Filter operators: `<`, `>`, `=`, `!=`, `<=`, `>=`, `matches`, `not_match`,
+`contains`, `not_contain`, `regex_matches`, `regex_not_match`, `is_reported`,
+`is_not_reported`.
+
+## Alerts
+
+**There is no REST API for creating or editing alerts.** Alerts live on
+dashboards and are made in the Mission Portal UI: Dashboard -> add alert ->
+name, severity, condition, host scope, notifications. What you can deliver is
+the *condition*, and what you can read is the event log.
+
+Condition types: Policy (promise outcomes), Inventory (attribute filters),
+Software updates, File changed, and **Custom SQL** -- the one you write.
+
+### Custom-SQL conditions
+
+How Mission Portal runs one *(3.27.1, `dashboard/libraries/CustomAlert.php`)*:
+
+- **Status**: the SQL goes to `/api/query` unchanged. Failing hosts = **number
+  of rows**. The alert triggers when that is above zero.
+- **Host list**: the SQL is wrapped as
+  ```sql
+  SELECT hosts.HostName AS "Host name",  UserQueryData .* FROM hosts
+  INNER JOIN  (<your SQL>) AS UserQueryData ON UserQueryData.hostkey = hosts.hostkey
+  ```
+
+So a condition must:
+1. **Return a column named `hostkey`**, in any position. The UI adds the
+   hostname itself.
+2. **Return one row per failing host** -- `SELECT DISTINCT`, or `GROUP BY
+   hostkey`. Two rows for one host make the alert say two hosts are failing.
+3. **Have no trailing `;` or trailing `--` comment** (it is wrapped twice).
+4. Use **current-state views** (see above). History tables make alerts fire
+   for hosts that have since recovered.
+
+**Before handing a condition over, test it the way Mission Portal will run
+it**, with the exact bytes you deliver (write the file first, then test the
+file). Run both forms and check the second returns rows:
+
+```bash
+sql=$(cat alert.sql)
+jq -n --arg q "$sql" '{query: $q}' | $M POST /api/query -
+jq -n --arg q "SELECT hosts.HostName AS \"Host name\", u.* FROM hosts INNER JOIN ($sql) AS u ON u.hostkey = hosts.hostkey" \
+  '{query: $q}' | $M POST /api/query -
+```
+
+Example -- hosts whose last agent run failed (`agentstatus` has one row per
+host, so no `DISTINCT` is needed; extra columns show up in the host list):
+
+```sql
+SELECT hostkey, lastagentlocalexecutiontimestamp AS "Last agent run"
+FROM agentstatus
+WHERE lastagentexecutionstatus = 'FAIL'
+```
+
+When the condition joins or filters a table with several rows per host --
+`software`, `variables`, `contexts`, `promiseexecutions` -- collapse to one
+row per `hostkey` (`SELECT DISTINCT hostkey ...` or `GROUP BY hostkey`), and
+check it: count rows and distinct hostkeys in the result, and make them equal.
+
+### Alert events and custom actions
+
+- `GET /api/event` lists events, including alert state changes (bare array
+  of `{id, event, payload, date}`).
+- A **custom action** is a script uploaded in Settings (admin only) that runs
+  when an alert triggers, clears, or reminds. It receives one argument: a path
+  to a `KEY=VALUE` file. Common keys: `ALERT_ID`, `ALERT_NAME`,
+  `ALERT_SEVERITY`, `ALERT_STATUS` (`fail` = triggered, `success` = cleared),
+  `ALERT_FAILED_HOST`, `ALERT_TOTAL_HOST`, `ALERT_CONDITION_TYPE`,
+  `ALERT_LAST_CHECK` (epoch). Type-specific keys:
+  `web-ui/custom-actions-for-alerts.markdown` in the docs checkout.
+
+## Health diagnostics
+
+The Health page's categories, via `/api/health-diagnostic/`:
+
+| Status key / report id | Health page label | Meaning |
+|---|---|---|
+| `hostsNeverCollected` | Missing reporting data | bootstrapped, no report ever collected |
+| `notRecentlyCollected` | Unreachable hosts | reported before, not within the Unreachable host threshold |
+| `agentNotRunRecently` | Outdated reporting data | reachable, but the agent has not run recently |
+| `lastAgentRunUnsuccessful` | Policy errors | the last agent run failed |
+| `hostsUsingSameIdentity` | Duplicate IDs | two machines sharing one key |
+| `hostsUsingSameName` | Duplicate hostnames | two keys reporting one hostname |
+| `deletedHostsReport` | (deleted hosts) | deleted, but still trying to report |
+
+To list every flagged host:
+
+```bash
+$M GET /api/health-diagnostic/status        # counts per category, plus total / totalFailed
+$M POST /api/health-diagnostic/report/agentNotRunRecently '{"limit": 10000}'
+```
+
+- **`report_ids` is incomplete.** `GET /api/health-diagnostic/report_ids`
+  omits `hostsUsingSameName`, which `/status` counts and
+  `/report/hostsUsingSameName` serves *(3.27.1)*. Take the categories from
+  the keys of `/status` (minus `total` and `totalFailed`) instead.
+- **Use the first column, `key`, as the hostkey.** Report columns differ per
+  category, and four of seven have no `hostkey` column *(3.27.1)*.
+- **A host is listed under one category only**, the one closest to the root
+  cause. A host that is a duplicate *and* not running its agent shows only
+  as a duplicate.
+- Deleted hosts do not count toward Duplicate hostnames.
+- Dismissing hosts (`POST /api/health-diagnostic/dismiss/:id`) hides them for
+  the calling user only. It changes what the page shows: ask first.
+
+**When a host is not flagged but should be** (or the reverse): the thresholds
+are not what they look like.
+
+- *Outdated reporting data* fires when the last report is more than
+  `max(600s, 1.3 x agentexecutioninterval)` newer than the last agent run.
+  The interval is **learned** from the gaps between recorded runs (a running
+  average in `agentstatus.agentexecutioninterval`), not read from the agent's
+  schedule. A host that was powered off for days learns an interval of days,
+  and will not be flagged for about a week after its agent stops.
+- *Unreachable hosts* uses the `blueHostHorizon` setting, which the API holds
+  in **seconds** -- the Settings page shows minutes and converts. The docs say
+  minutes, default 900; a 3.27.1 hub had 2400 (40 minutes).
+- *Duplicate IDs* uses `hostsCollisionsThreshold` (3 on 3.27.1).
+- **Every host turning Unreachable at once** usually means `cf-hub` stopped
+  collecting, not that the hosts went down. Check the hub's `cf-hub` log. One
+  cause: exceeding the license ("N hosts are connected to this hub, but it is
+  only licensed to support 25 clients") stops collection from *all* hosts.
+
+## Hosts
+
+| Endpoint | Method | Notes |
+|---|---|---|
+| `/api/host` | GET | `id` is the hostkey; paginate (default 50) |
+| `/api/host/:hostkey` | GET, DELETE | DELETE removes reporting data now, keys within ~10 min. Ask first |
+| `/api/hosts/deleted` | GET | deleted hosts (`skip`, `limit`) |
+| `/api/host/:hostkey/vital` | GET | monitoring vitals; one week retained |
+| `/api/actions/report_collection` | POST | `{"hostkey": ...}`, collect now (202) |
+| `/api/actions/agent_run` | POST | `{"hostkey": ...}`, blocks up to ~2 min. Ask first |

@@ -1,0 +1,112 @@
+{
+  "variant": "no-skill",
+  "run": 2,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 215062,
+    "duration_api_ms": 199000,
+    "num_turns": 81,
+    "total_cost_usd": 0.53,
+    "is_error": false,
+    "subtype": "success",
+    "usage": {
+      "input_tokens": 649,
+      "cache_creation_input_tokens": 43087,
+      "cache_read_input_tokens": 3279918,
+      "output_tokens": 22129
+    },
+    "driver": "console"
+  },
+  "skill_sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e",
+  "skill_changed_during_run": true,
+  "skill_sha256_after": "56efe10b0ee3e4862ae68b90f4f2d8d224c14d004425b9fb5d6592f1db3cc3ed",
+  "case": "mp-03-all-hosts",
+  "case_title": "List every host (1100+ of them) with hostkey, hostname and IP",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "all-hosts.sh"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "all-hosts.sh",
+    "exit_code": 0,
+    "stdout": "\"SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940\",\"hub.example.com\",\"10.0.2.15\"\n",
+    "stderr": "",
+    "expected": [
+      "1123 hosts"
+    ],
+    "got": [
+      "1 hosts"
+    ]
+  },
+  "checks": [
+    {
+      "id": "script_present",
+      "label": "Script all-hosts.sh written",
+      "weight": 5,
+      "earned": 5,
+      "detail": "all-hosts.sh"
+    },
+    {
+      "id": "runs_clean",
+      "label": "Script exits 0 against the hub",
+      "weight": 10,
+      "earned": 10,
+      "detail": "rc=0"
+    },
+    {
+      "id": "output_parses",
+      "label": "Every line is <hostkey>,<hostname>,<ip>",
+      "weight": 5,
+      "earned": 5.0,
+      "detail": "1/1 lines parse"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host listed",
+      "weight": 25,
+      "earned": 0.02,
+      "detail": "1 of 1123 hosts"
+    },
+    {
+      "id": "complete",
+      "label": "No host missing (all or nothing)",
+      "weight": 25,
+      "earned": 0,
+      "detail": "1122 missing"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "Only real, current hosts listed",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "1 of 1 listed are current hosts"
+    },
+    {
+      "id": "fields_correct",
+      "label": "Hostname and IP match the hub",
+      "weight": 10,
+      "earned": 0.0,
+      "detail": "0 of 1 listed hosts"
+    },
+    {
+      "id": "api_only",
+      "label": "Answers through the REST API only",
+      "weight": 10,
+      "earned": 10,
+      "detail": "uses /api"
+    }
+  ],
+  "score": 40.0,
+  "max_score": 100
+}

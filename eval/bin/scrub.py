@@ -18,6 +18,10 @@ address is kept when it appears in the inputs the model was given (allowlist
 files) or sits at a domain reserved for documentation. Anything else is an
 address the model produced from its own context, which is where the operator's
 identity lives -- those are replaced, and every replacement is logged.
+
+A fourth thing leaks once a case talks to a live service: the credentials the
+harness hands the model. Values listed in $CFEVAL_REDACT (newline-separated)
+are replaced outright -- the model echoes them into scripts and replies.
 """
 
 import os
@@ -28,6 +32,9 @@ from pathlib import Path
 
 _HOME = os.path.expanduser("~")
 _HOST = socket.gethostname().split(".")[0]
+# Shortest first would let a prefix clobber a longer secret; replace longest first.
+_SECRETS = sorted((v for v in os.environ.get("CFEVAL_REDACT", "").splitlines() if len(v) > 3),
+                  key=len, reverse=True)
 
 _EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 # RFC 2606/6761 reserve these, plus the stock fictional companies.
@@ -66,6 +73,8 @@ def _one_email(m):
 def redact(text):
     if not text:
         return text
+    for secret in _SECRETS:
+        text = text.replace(secret, "<redacted>")
     if _HOME and _HOME != "/":
         text = text.replace(_HOME, "~")
     if _HOST and len(_HOST) > 3:
@@ -79,10 +88,11 @@ def scrub_file(path):
         raw = path.read_bytes()
     except OSError:
         return False
-    if b"\0" in raw:  # binary
-        return False
+    # screen's hardcopy (the console driver's screen-final.txt) pads with NUL
+    # bytes, and treating every NUL as "binary" left those files unscrubbed.
+    # Text is text once the NULs are gone; real binaries rarely decode as UTF-8.
     try:
-        text = raw.decode("utf-8")
+        text = raw.replace(b"\0", b"").decode("utf-8")
     except UnicodeDecodeError:
         return False
     cleaned = redact(text)

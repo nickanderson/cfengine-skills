@@ -1,0 +1,15 @@
+{
+  "variant": "with-skill",
+  "run": 2,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 22367,
+    "duration_api_ms": 20383,
+    "num_turns": 6,
+    "total_cost_usd": 0.0546076,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e"
+}

@@ -1,0 +1,94 @@
+{
+  "variant": "no-skill",
+  "run": 1,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 357366,
+    "duration_api_ms": 137150,
+    "num_turns": 59,
+    "total_cost_usd": 0.35944629999999994,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "626f6b5e686fab4221dbebcbd30a36730973bb4eb9c21b081094ed3b51b291a7",
+  "case": "mp-04-alert-notkept",
+  "case_title": "Custom-SQL alert condition: hosts with a promise not kept",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "alert.sql"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "alert.sql",
+    "exit_code": null,
+    "stdout": "-- Alert: Hosts with promises not kept in most recent run\n-- Returns hostnames where any promise has outcome 'NOTKEPT' in the most recent agent execution\n-- Uses cfdb database from CFEngine Mission Portal\n\nSELECT DISTINCT\n    h.hostname,\n    h.hostkey,\n    latest.last_execution_time\nFROM\n    hosts h\n    INNER JOIN (\n        SELECT\n            hostkey,\n            MAX(changetimestamp) as last_execution_time\n        FROM\n            promiseexecutions\n        GROUP BY\n            hostkey\n    ) latest ON h.hostkey = latest.hostkey\n    INNER JOIN promiseexecutions pe ON (\n        h.hostkey = pe.hostkey\n        AND pe.changetimestamp = latest.last_execution_time\n        AND pe.promiseoutcome = 'NOTKEPT'\n    )\nORDER BY\n    h.hostname;",
+    "stderr": "HTTP 500: An error occurred while querying the database.",
+    "expected": [
+      "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940"
+    ],
+    "got": []
+  },
+  "checks": [
+    {
+      "id": "sql_present",
+      "label": "Condition written to alert.sql",
+      "weight": 5,
+      "earned": 5,
+      "detail": "alert.sql"
+    },
+    {
+      "id": "runs_standalone",
+      "label": "Runs as-is through /api/query (alert status)",
+      "weight": 10,
+      "earned": 0,
+      "detail": "HTTP 500: An error occurred while querying the database."
+    },
+    {
+      "id": "host_list_wrap",
+      "label": "Survives Mission Portal's host-list wrapper",
+      "weight": 20,
+      "earned": 0,
+      "detail": "HTTP 500: An error occurred while querying the database."
+    },
+    {
+      "id": "one_row_per_host",
+      "label": "One row per host (status counts rows)",
+      "weight": 15,
+      "earned": 0,
+      "detail": "did not run"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host sharing a hostname triggers",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 1"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No other host triggers",
+      "weight": 15,
+      "earned": 0,
+      "detail": "0 of 0 returned are duplicates"
+    },
+    {
+      "id": "current_state",
+      "label": "Uses current-state views, not history or base tables",
+      "weight": 15,
+      "earned": 15,
+      "detail": "clean"
+    }
+  ],
+  "score": 20.0,
+  "max_score": 100
+}

@@ -1,0 +1,108 @@
+{
+  "variant": "with-skill",
+  "run": 3,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 55772,
+    "duration_api_ms": 47280,
+    "num_turns": 10,
+    "total_cost_usd": 0.2329586,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e",
+  "case": "mp-01-health",
+  "case_title": "List the hosts Mission Portal's Health page flags, by category",
+  "rubric_version": 2,
+  "artifacts": {
+    "policy_files": [
+      "unhealthy-hosts.sh"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "unhealthy-hosts.sh",
+    "exit_code": 0,
+    "stdout": "agentNotRunRecently,SHA=73391bc3fefecd394b294f8e29b6f1efe1007de652d7479da654542b08d8153f\ndeletedHostsReport,SHA=d2224f7767ee9f3c7a6f7372b8096a4422e9331032976d2be95bd6fc126387dd\nhostsUsingSameName,SHA=06791f18efa2b15c5c71bcf452fa923126533938734039f0645e9f23694d24c5\nhostsUsingSameName,SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5\nhostsUsingSameName,SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940\nhostsUsingSameName,SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4\nnotRecentlyCollected,SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4\n",
+    "stderr": "",
+    "expected": [
+      "agentNotRunRecently,SHA=73391bc3fefecd394b294f8e29b6f1efe1007de652d7479da654542b08d8153f",
+      "deletedHostsReport,SHA=d2224f7767ee9f3c7a6f7372b8096a4422e9331032976d2be95bd6fc126387dd",
+      "hostsUsingSameName,SHA=06791f18efa2b15c5c71bcf452fa923126533938734039f0645e9f23694d24c5",
+      "hostsUsingSameName,SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940",
+      "hostsUsingSameName,SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4",
+      "hostsUsingSameName,SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5",
+      "notRecentlyCollected,SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4"
+    ],
+    "got": [
+      "agentNotRunRecently,SHA=73391bc3fefecd394b294f8e29b6f1efe1007de652d7479da654542b08d8153f",
+      "deletedHostsReport,SHA=d2224f7767ee9f3c7a6f7372b8096a4422e9331032976d2be95bd6fc126387dd",
+      "hostsUsingSameName,SHA=06791f18efa2b15c5c71bcf452fa923126533938734039f0645e9f23694d24c5",
+      "hostsUsingSameName,SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940",
+      "hostsUsingSameName,SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4",
+      "hostsUsingSameName,SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5",
+      "notRecentlyCollected,SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4"
+    ]
+  },
+  "checks": [
+    {
+      "id": "script_present",
+      "label": "Script unhealthy-hosts.sh written",
+      "weight": 5,
+      "earned": 5,
+      "detail": "unhealthy-hosts.sh"
+    },
+    {
+      "id": "runs_clean",
+      "label": "Script exits 0 against the hub",
+      "weight": 15,
+      "earned": 15,
+      "detail": "rc=0"
+    },
+    {
+      "id": "output_parses",
+      "label": "Every stdout line is <category>,<hostkey>",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "7/7 lines parse"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every flagged host listed",
+      "weight": 25,
+      "earned": 25.0,
+      "detail": "6 of 6 flagged hosts"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No healthy host listed",
+      "weight": 15,
+      "earned": 15.0,
+      "detail": "6 of 6 listed are flagged"
+    },
+    {
+      "id": "categories_correct",
+      "label": "Each host under the right category",
+      "weight": 20,
+      "earned": 20.0,
+      "detail": "6 of 6 flagged hosts under one of their categories"
+    },
+    {
+      "id": "api_only",
+      "label": "Answers through the REST API only",
+      "weight": 10,
+      "earned": 10,
+      "detail": "uses /api"
+    }
+  ],
+  "score": 100.0,
+  "max_score": 100
+}

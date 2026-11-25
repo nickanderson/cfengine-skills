@@ -1,0 +1,110 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 97414,
+    "duration_api_ms": 82000,
+    "num_turns": 10,
+    "total_cost_usd": 0.232,
+    "is_error": false,
+    "subtype": "success",
+    "usage": {
+      "input_tokens": 20,
+      "cache_creation_input_tokens": 20513,
+      "cache_read_input_tokens": 364426,
+      "output_tokens": 7591
+    },
+    "driver": "console"
+  },
+  "skill_sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e",
+  "case": "mp-03-all-hosts",
+  "case_title": "List every host (1100+ of them) with hostkey, hostname and IP",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "all-hosts.sh"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "all-hosts.sh",
+    "exit_code": 0,
+    "stdout": "b5adc1b8ccb9254476c0f78784e3ada8dfe83a2e7aa7e4681b,web-0968.ams.example.com,172.16.3.219\nSHA=ac9858c992dbcfd1b5cf06b4d9936ac4fca620a89e6e4a5ead7034db9684e7c1,web-0976.ams.example.com,172.16.3.227\nSHA=7bd25628e92a301248271f4048f897093d16ab9a13fb73725fdba33c41a64650,web-0984.ams.example.com,172.16.3.235\nSHA=7c7bcd1195244a724fe97c62ad6bee6262e2b2f1fe1628423f0bf567feef268e,web-0992.ams.example.com,172.16.3.243\nSHA=3c6b3eba22c51fec83d5ea37e449e95faeddfd996f019fe1f2fd1e4a37dacb25,web-1000.ams.example.com,172.16.4.1\nSHA=876047d5c8ec0d8717b7af477739b566663cb6554c10a88123ef02e20fc77b11,web-1008.ams.example.com,172.16.4.9\nSHA=c8802ab82367e80e756f81c51cd53c95126d571355635bd99f5fd13fb0d056e7,web-1016.ams.example.com,172.16.4.17\nSHA=22a5da6042ed2220cd81e59eb8840af928f75ffecf03e83084efef94d2c88f09,web-1024.ams.example.com,172.16.4.25\nSHA=158081e6495e4213ac3f82167b37ced0197c5a03bf8762a0509331c462e51ad5,web-1032.ams.example.com,172.16.4.33\nSHA=a2e449d8d2ce96483d994f472b1751917c2c4f2d1cb40cb5af13b51d6b42d267,web-1040.ams.example.com,172.16.4.41\nSHA=2e54528496274503c22e63443b1e19477e36a8f0d44c70997a1d4b1e66aaeef9,web-1048.ams.example.com,172.16.4.49\nSHA=1b40f743483f405a2213d8f10f40070a115a0d36d94a530c0c53ed52af6ff3d1,web-1056.ams.example.com,172.16.4.57\nSHA=a5f339c9d54c1bcebdc9781e95edae9138bffcf0fcb3d4f1f9a070b16de0407c,web-1064.ams.example.com,172.16.4.65\nSHA=766dbd6c1d87432999cc24f4beadf53134852196932553081ec4edf2568ff3b0,web-1072.ams.example.com,172.16.4.73\nSHA=13473f7a9560cd60f192437a51df1837b72c16346385c7bfd1655ced5e9e0fac,web-1080.ams.example.com,172.16.4.81\nSHA=2ca945a9c74ba0c0095985ad2fd1bf69e5fa3c4f4eaf593f5fbd79201ff6c23e,web-1088.ams.example.com,172.16.4.89\nSHA=99f7a099b4158d1b5b1ff342339680ec7d7b46104a2a92ad43a7cbb6b88f5097,web-1096.ams.example.com,172.16.4.97\nSHA=480f8eae5d8a2fbdb002781da51e5738ceed1ebc1ed985eeaf483c9e3bcb338e,web-1104.ams.example.com,172.16.4.105\nSHA=53e94a508c2c4483a5e3427cb5c7ac8f5aa4993c231d70ea9ef5733d9b64fd58,web-1112.ams.example.com,172.16.4.113\n",
+    "stderr": "",
+    "expected": [
+      "1123 hosts"
+    ],
+    "got": [
+      "1123 hosts"
+    ]
+  },
+  "checks": [
+    {
+      "id": "script_present",
+      "label": "Script all-hosts.sh written",
+      "weight": 5,
+      "earned": 5,
+      "detail": "all-hosts.sh"
+    },
+    {
+      "id": "runs_clean",
+      "label": "Script exits 0 against the hub",
+      "weight": 10,
+      "earned": 10,
+      "detail": "rc=0"
+    },
+    {
+      "id": "output_parses",
+      "label": "Every line is <hostkey>,<hostname>,<ip>",
+      "weight": 5,
+      "earned": 5.0,
+      "detail": "1123/1123 lines parse"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host listed",
+      "weight": 25,
+      "earned": 25.0,
+      "detail": "1123 of 1123 hosts"
+    },
+    {
+      "id": "complete",
+      "label": "No host missing (all or nothing)",
+      "weight": 25,
+      "earned": 25,
+      "detail": "complete"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "Only real, current hosts listed",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "1123 of 1123 listed are current hosts"
+    },
+    {
+      "id": "fields_correct",
+      "label": "Hostname and IP match the hub",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "1123 of 1123 listed hosts"
+    },
+    {
+      "id": "api_only",
+      "label": "Answers through the REST API only",
+      "weight": 10,
+      "earned": 10,
+      "detail": "uses /api"
+    }
+  ],
+  "score": 100.0,
+  "max_score": 100
+}

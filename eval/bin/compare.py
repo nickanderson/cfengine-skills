@@ -33,6 +33,16 @@ btn.addEventListener('click', () => {
 """
 
 
+
+def skill_of_case(results_dir, case):
+    """case.json "skill", defaulting as run-eval.sh does."""
+    import json as _json
+    f = Path(results_dir).resolve().parent / "cases" / case / "case.json"
+    try:
+        return _json.loads(f.read_text()).get("skill", "cfengine-policy")
+    except (OSError, ValueError):
+        return "cfengine-policy"
+
 def load_all(history):
     rows = []
     for line in Path(history).read_text().splitlines():
@@ -190,19 +200,24 @@ def render_case(rows_all, results_dir, case):
         if len(variants) == 2:
             v = variants["with-skill"]["score_mean"] - variants["no-skill"]["score_mean"]
             d = '<span class="%s">%+.1f</span>' % ("pass" if v > 0 else "fail" if v < 0 else "detail", v)
+        # Effort: mean turns per run, "no-skill -> with-skill". Absent from
+        # rows recorded before efficiency was aggregated.
+        turns = [variants[a].get("turns_mean") for a in VARIANTS if a in variants]
+        effort = " &rarr; ".join("%.0f" % t for t in turns if t is not None) or "&mdash;"
         fl, fc = fn_label(functional_of(results_dir, latest[m], case, "with-skill"))
         n = max((variants[a]["runs"] for a in variants), default=0)
         rows.append('<tr><td><b>%s</b></td><td class="num detail">%d</td>%s<td class="num">%s</td>'
-                    '<td class="%s">%s</td><td class="detail"><code>%s</code></td></tr>'
-                    % (e(m), n, cells, d, fc, fl, e(latest[m])))
+                    '<td class="num">%s</td><td class="%s">%s</td><td class="detail"><code>%s</code></td></tr>'
+                    % (e(m), n, cells, d, effort, fc, fl, e(latest[m])))
     body.append('<details open><summary>Table view &mdash; mean, run range, and the functional '
                 'proof for the with-skill variant</summary><table><thead><tr>'
                 '<th>Model</th><th class="num">n</th>'
                 '<th class="num">No skill</th><th class="num">range</th>'
                 '<th class="num">With skill</th><th class="num">range</th>'
-                '<th class="num">Delta</th><th>Augments override</th><th>Run</th>'
+                '<th class="num">Delta</th><th class="num">Turns</th><th>Augments override</th><th>Run</th>'
                 '</tr></thead><tbody>%s</tbody></table></details>' % "".join(rows))
-    body.append('<p class="note" style="margin-top:14px">Delta measures adherence to the pattern '
+    if skill_of_case(results_dir, case) == "cfengine-policy":
+      body.append('<p class="note" style="margin-top:14px">Delta measures adherence to the pattern '
                 'the skill teaches. A model can score low and still emit working policy &mdash; read '
                 'the augments-override column as the functional ground truth.</p>')
     body.append('</div>')
@@ -213,6 +228,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--history", required=True)
     ap.add_argument("--results-dir", required=True)
+    ap.add_argument("--skill", help="only cases whose case.json names this skill")
     ap.add_argument("--case", action="append",
                     help="case id (repeatable); default: every case in the history")
     ap.add_argument("--out", required=True)
@@ -220,10 +236,13 @@ def main():
 
     rows_all = load_all(args.history)
     cases = args.case or sorted({r["case"] for r in rows_all if "case" in r})
+    if args.skill:
+        cases = [c for c in cases if skill_of_case(args.results_dir, c) == args.skill]
+    title = "%s skill" % args.skill if args.skill else "cfengine-skills"
     if not cases:
         raise SystemExit("compare: no cases found in %s" % args.history)
 
-    body = ['<h1>cfengine-policy skill &mdash; model comparison</h1>',
+    body = ['<h1>%s &mdash; model comparison</h1>' % e(title),
             '<p class="sub">latest run per model &middot; dot = mean, rule = run range, '
             'connector = skill delta</p>']
     rendered = 0
@@ -237,10 +256,10 @@ def main():
 
     doc = ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
            '<meta name="viewport" content="width=device-width,initial-scale=1">'
-           '<title>cfengine-policy model comparison</title><style>%s</style></head><body>'
+           '<title>%s model comparison</title><style>%s</style></head><body>'
            '<button class="toggle">light / dark</button><div id="tt"></div>'
            '<div class="wrap">%s</div><script>%s</script></body></html>'
-           % (CSS, "".join(body), JS))
+           % (e(title), CSS, "".join(body), JS))
     Path(args.out).write_text(doc)
     print("compare: %s" % args.out)
 

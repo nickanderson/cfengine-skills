@@ -1,0 +1,170 @@
+{
+  "run_id": "20260922-211956-sonnet-x5",
+  "info": {
+    "timestamp": "20260922-211956",
+    "label": "sonnet-x5",
+    "model": "sonnet",
+    "runs_per_variant": 5,
+    "variants": "both",
+    "functional": false,
+    "cfengine": "CFEngine Core 3.27.0",
+    "engine": "container localhost/cfengine-test:3.27.0",
+    "platform": "Linux-x86_64",
+    "harness": {
+      "claude_code": "2.1.280 (Claude Code)",
+      "eval_commit": "c277b2a0b0fcc334e6910b6ad49aa6bd907d0772",
+      "eval_dirty": false
+    },
+    "skill_delivery": "installed",
+    "docs": {
+      "branch": "3.27",
+      "commit": "90b3f1c445d86ebb71d2c5d4b1f7d19a4797cffa"
+    },
+    "skill": {
+      "path": "mission-portal/SKILL.md",
+      "commit": "061189d0939f7d78d3aaa22366e9861f0080523f",
+      "dirty": false,
+      "sha256": "626f6b5e686fab4221dbebcbd30a36730973bb4eb9c21b081094ed3b51b291a7",
+      "id": "061189d0",
+      "bytes": 15333
+    }
+  },
+  "cases": {
+    "mp-01-health": {
+      "no-skill": {
+        "runs": 5,
+        "efficiency": {
+          "turns": {
+            "mean": 35.8,
+            "min": 17,
+            "max": 70
+          },
+          "cost_usd": {
+            "mean": 0.775,
+            "min": 0.343,
+            "max": 1.539
+          },
+          "duration_s": {
+            "mean": 273.42,
+            "min": 78.522,
+            "max": 509.762
+          }
+        },
+        "functional": null,
+        "score_mean": 95.5,
+        "score_min": 77.5,
+        "score_max": 100.0,
+        "max_score": 100,
+        "checks": {
+          "script_present": {
+            "label": "Script unhealthy-hosts.sh written",
+            "weight": 5,
+            "earned_mean": 5.0
+          },
+          "runs_clean": {
+            "label": "Script exits 0 against the hub",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "output_parses": {
+            "label": "Every stdout line is <category>,<hostkey>",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "hosts_recall": {
+            "label": "Every flagged host listed",
+            "weight": 25,
+            "earned_mean": 22.5
+          },
+          "hosts_precision": {
+            "label": "No healthy host listed",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "categories_correct": {
+            "label": "Each host under the right category",
+            "weight": 20,
+            "earned_mean": 18.0
+          },
+          "api_only": {
+            "label": "Answers through the REST API only",
+            "weight": 10,
+            "earned_mean": 10.0
+          }
+        },
+        "cost_usd": 3.8727,
+        "duration_ms": 1367100
+      },
+      "with-skill": {
+        "runs": 5,
+        "efficiency": {
+          "turns": {
+            "mean": 9.6,
+            "min": 8,
+            "max": 11
+          },
+          "cost_usd": {
+            "mean": 0.226,
+            "min": 0.207,
+            "max": 0.249
+          },
+          "duration_s": {
+            "mean": 68.368,
+            "min": 61.745,
+            "max": 74.16
+          }
+        },
+        "functional": null,
+        "score_mean": 100.0,
+        "score_min": 100.0,
+        "score_max": 100.0,
+        "max_score": 100,
+        "checks": {
+          "script_present": {
+            "label": "Script unhealthy-hosts.sh written",
+            "weight": 5,
+            "earned_mean": 5.0
+          },
+          "runs_clean": {
+            "label": "Script exits 0 against the hub",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "output_parses": {
+            "label": "Every stdout line is <category>,<hostkey>",
+            "weight": 10,
+            "earned_mean": 10.0
+          },
+          "hosts_recall": {
+            "label": "Every flagged host listed",
+            "weight": 25,
+            "earned_mean": 25.0
+          },
+          "hosts_precision": {
+            "label": "No healthy host listed",
+            "weight": 15,
+            "earned_mean": 15.0
+          },
+          "categories_correct": {
+            "label": "Each host under the right category",
+            "weight": 20,
+            "earned_mean": 20.0
+          },
+          "api_only": {
+            "label": "Answers through the REST API only",
+            "weight": 10,
+            "earned_mean": 10.0
+          }
+        },
+        "cost_usd": 1.1282,
+        "duration_ms": 341842
+      },
+      "delta": 4.5,
+      "efficiency_delta": {
+        "turns": -26.2,
+        "cost_usd": -0.549,
+        "duration_s": -205.052
+      }
+    }
+  }
+}

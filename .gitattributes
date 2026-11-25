@@ -1,0 +1,4 @@
+# Append-only: every eval run adds rows, so two branches that both ran evals
+# always conflict here. Union keeps both sides' rows, which is the right merge.
+eval/results/history.jsonl merge=union
+eval/archive/history.jsonl merge=union

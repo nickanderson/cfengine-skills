@@ -1,0 +1,37 @@
+{
+  "id": "mp-03-all-hosts",
+  "title": "List every host (1100+ of them) with hostkey, hostname and IP",
+  "prompt_file": "prompt.txt",
+  "skill": "mission-portal",
+  "grader": "mission-portal",
+  "grader_task": "host_list",
+  "system_prompt": "lib/mp-system-prompt.txt",
+  "pre_run": "lib/mp-clone-hosts.sh create 1118",
+  "post_run": "lib/mp-clone-hosts.sh cleanup",
+  "exclusive": "adds 1118 clone hosts for the length of each invocation, which every other case's host lists and Health counts would see, so it runs alone",
+  "env": [
+    "MP_URL",
+    "MP_USER",
+    "MP_PASSWORD",
+    "MP_VAGRANT_DIR"
+  ],
+  "secret_env": [
+    "MP_PASSWORD"
+  ],
+  "expect": {
+    "script": "all-hosts.sh",
+    "truth_sql": "SELECT hostkey, hostname, ipaddress FROM hosts",
+    "min_truth_hosts": 1000
+  },
+  "weights": {
+    "script_present": 5,
+    "runs_clean": 10,
+    "output_parses": 5,
+    "hosts_recall": 25,
+    "complete": 25,
+    "hosts_precision": 10,
+    "fields_correct": 10,
+    "api_only": 10
+  },
+  "rubric_version": 1
+}

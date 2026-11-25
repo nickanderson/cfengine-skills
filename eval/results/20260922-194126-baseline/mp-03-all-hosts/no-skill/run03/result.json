@@ -1,0 +1,103 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 112782,
+    "duration_api_ms": 104734,
+    "num_turns": 24,
+    "total_cost_usd": 0.3518434,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "none",
+  "case": "mp-03-all-hosts",
+  "case_title": "List every host (1122 of them) with hostkey, hostname and IP",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "all-hosts.sh"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "all-hosts.sh",
+    "exit_code": 0,
+    "stdout": "r-666,0.0.3.73\nSHA=evalpgb265,worker-stage-north-cyan-wolf-896,0.0.1.9\nSHA=evalpg91,worker-stage-north-green-wolf-172,0.0.0.91\nSHA=evalpgb870,worker-stage-north-pink-unicorn-687,0.0.3.102\nSHA=evalpgb645,worker-stage-north-red-pony-463,0.0.2.133\nSHA=evalpgb334,worker-stage-south-blue-shark-435,0.0.1.78\nSHA=evalpgb21,worker-stage-south-blue-wolf-817,0.0.0.21\nSHA=evalpgb774,worker-stage-south-rainbow-unicorn-61,0.0.3.6\nSHA=evalpgb523,worker-stage-west-blue-wolf-690,0.0.2.11\nSHA=evalpgb956,worker-stage-west-orange-bear-50,0.0.3.188\nSHA=evalpg41,worker-stage-west-red-cobra-940,0.0.0.41\nSHA=evalpgb617,worker-stage-west-yellow-bear-983,0.0.2.105\nSHA=evalpgb96,worker-stage-west-yellow-lion-590,0.0.0.96\nSHA=evalpgb656,worker-test-central-blue-wolf-448,0.0.2.144\nSHA=evalpgb823,worker-test-central-orange-bear-513,0.0.3.55\nSHA=evalpgb950,worker-test-central-pink-bear-160,0.0.3.182\nSHA=evalpg72,worker-test-central-purple-lion-818,0.0.0.72\nSHA=evalpgb874,worker-test-east-cyan-cobra-712,0.0.3.106\nSHA=evalpgb994,worker-test-east-orange-eagle-757,0.0.3.226\nSHA=evalpgb192,worker-test-east-pink-tiger-252,0.0.0.192\nSHA=evalpgb60,worker-test-east-red-unicorn-808,0.0.0.60\nSHA=evalpgb904,worker-test-north-cyan-lion-965,0.0.3.136\nSHA=evalpgb869,worker-test-north-green-eagle-36,0.0.3.101\nSHA=evalpgb415,worker-test-north-pink-falcon-684,0.0.1.159\nSHA=evalpgb550,worker-test-north-rainbow-panther-444,0.0.2.38\nSHA=evalpgb756,worker-test-north-rainbow-wolf-184,0.0.2.244\nSHA=evalpg17,worker-test-north-yellow-unicorn-324,0.0.0.17\nSHA=evalpgb939,worker-test-south-cyan-bear-953,0.0.3.171\nSHA=evalpgb510,worker-test-south-cyan-eagle-100,0.0.1.254\nSHA=evalpgb639,worker-test-south-green-falcon-359,0.0.2.127\nSHA=evalpgb219,worker-test-south-purple-cobra-438,0.0.0.219\nSHA=evalpgb910,worker-test-south-purple-panther-245,0.0.3.142\nSHA=evalpgb174,worker-test-west-purple-panther-280,0.0.0.174\nSHA=evalpgb688,worker-test-west-rainbow-shark-161,0.0.2.176\nSHA=evalpgb759,worker-test-west-yellow-wolf-822,0.0.2.247\n",
+    "stderr": "",
+    "expected": [
+      "1122 hosts"
+    ],
+    "got": [
+      "1122 hosts"
+    ]
+  },
+  "checks": [
+    {
+      "id": "script_present",
+      "label": "Script all-hosts.sh written",
+      "weight": 5,
+      "earned": 5,
+      "detail": "all-hosts.sh"
+    },
+    {
+      "id": "runs_clean",
+      "label": "Script exits 0 against the hub",
+      "weight": 10,
+      "earned": 10,
+      "detail": "rc=0"
+    },
+    {
+      "id": "output_parses",
+      "label": "Every line is <hostkey>,<hostname>,<ip>",
+      "weight": 5,
+      "earned": 5.0,
+      "detail": "1122/1122 lines parse"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host listed",
+      "weight": 25,
+      "earned": 25.0,
+      "detail": "1122 of 1122 hosts"
+    },
+    {
+      "id": "complete",
+      "label": "No host missing (all or nothing)",
+      "weight": 25,
+      "earned": 25,
+      "detail": "complete"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "Only real, current hosts listed",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "1122 of 1122 listed are current hosts"
+    },
+    {
+      "id": "fields_correct",
+      "label": "Hostname and IP match the hub",
+      "weight": 10,
+      "earned": 10.0,
+      "detail": "1122 of 1122 listed hosts"
+    },
+    {
+      "id": "api_only",
+      "label": "Answers through the REST API only",
+      "weight": 10,
+      "earned": 10,
+      "detail": "uses /api"
+    }
+  ],
+  "score": 100.0,
+  "max_score": 100
+}

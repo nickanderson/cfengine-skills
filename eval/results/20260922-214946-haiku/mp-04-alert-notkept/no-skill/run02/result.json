@@ -1,0 +1,94 @@
+{
+  "variant": "no-skill",
+  "run": 2,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 148979,
+    "duration_api_ms": 120964,
+    "num_turns": 31,
+    "total_cost_usd": 0.24191210000000005,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "626f6b5e686fab4221dbebcbd30a36730973bb4eb9c21b081094ed3b51b291a7",
+  "case": "mp-04-alert-notkept",
+  "case_title": "Custom-SQL alert condition: hosts with a promise not kept",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "alert.sql"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "alert.sql",
+    "exit_code": null,
+    "stdout": "-- Mission Portal Alert: Hosts with Not-Kept Promises in Most Recent Run\n-- Triggers for any host where a promise was NOT KEPT in its latest agent execution\n\nSELECT DISTINCT\n  (inv.inventory ->> 'Host name') AS hostname\nFROM __hosts h\nINNER JOIN __inventory inv ON h.hostkey = inv.hostkey\nINNER JOIN (\n  SELECT hostkey, MAX(executiontime) as latest_execution\n  FROM __promiseexecutions\n  GROUP BY hostkey\n) latest ON h.hostkey = latest.hostkey\nINNER JOIN __promiseexecutions pe ON (\n  pe.hostkey = h.hostkey\n  AND pe.executiontime = latest.latest_execution\n)\nWHERE (inv.inventory ->> 'Host name') IS NOT NULL\n  AND pe.outcome = 'NOTKEPT'\nGROUP BY h.hostkey, (inv.inventory ->> 'Host name')\nORDER BY hostname;",
+    "stderr": "HTTP 403: Query accesses restricted database resources",
+    "expected": [
+      "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940"
+    ],
+    "got": []
+  },
+  "checks": [
+    {
+      "id": "sql_present",
+      "label": "Condition written to alert.sql",
+      "weight": 5,
+      "earned": 5,
+      "detail": "alert.sql"
+    },
+    {
+      "id": "runs_standalone",
+      "label": "Runs as-is through /api/query (alert status)",
+      "weight": 10,
+      "earned": 0,
+      "detail": "HTTP 403: Query accesses restricted database resources"
+    },
+    {
+      "id": "host_list_wrap",
+      "label": "Survives Mission Portal's host-list wrapper",
+      "weight": 20,
+      "earned": 0,
+      "detail": "HTTP 403: Query accesses restricted database resources"
+    },
+    {
+      "id": "one_row_per_host",
+      "label": "One row per host (status counts rows)",
+      "weight": 15,
+      "earned": 0,
+      "detail": "did not run"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host sharing a hostname triggers",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 1"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No other host triggers",
+      "weight": 15,
+      "earned": 0,
+      "detail": "0 of 0 returned are duplicates"
+    },
+    {
+      "id": "current_state",
+      "label": "Uses current-state views, not history or base tables",
+      "weight": 15,
+      "earned": 0,
+      "detail": "uses: __hosts, __inventory, __promiseexecutions"
+    }
+  ],
+  "score": 5.0,
+  "max_score": 100
+}

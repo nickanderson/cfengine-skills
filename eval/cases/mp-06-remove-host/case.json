@@ -1,0 +1,38 @@
+{
+  "id": "mp-06-remove-host",
+  "title": "Remove a decommissioned host from Mission Portal for good",
+  "prompt_file": "prompt.txt",
+  "skill": "mission-portal",
+  "grader": "mission-portal",
+  "grader_task": "host_remove",
+  "system_prompt": "lib/mp-system-prompt.txt",
+  "pre_run": "lib/mp-synthetic-hosts.sh create",
+  "post_run": "lib/mp-recover-hub.sh",
+  "exclusive": "deletes hosts: a careless agent can remove real ones, so it runs alone and lib/mp-recover-hub.sh repairs the hub after every invocation",
+  "env": [
+    "MP_URL",
+    "MP_USER",
+    "MP_PASSWORD",
+    "MP_VAGRANT_DIR"
+  ],
+  "secret_env": [
+    "MP_PASSWORD"
+  ],
+  "expect": {
+    "script": "remove-host.sh",
+    "target": "decomm01.example.com",
+    "decoy": "lab-decomm01.example.com",
+    "helper": "lib/mp-synthetic-hosts.sh"
+  },
+  "weights": {
+    "script_present": 5,
+    "runs_clean": 10,
+    "target_not_live": 10,
+    "target_purged": 25,
+    "decoy_untouched": 20,
+    "others_untouched": 15,
+    "missing_host_fails": 5,
+    "api_only": 10
+  },
+  "rubric_version": 1
+}

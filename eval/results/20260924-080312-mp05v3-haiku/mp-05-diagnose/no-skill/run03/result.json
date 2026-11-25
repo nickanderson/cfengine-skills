@@ -1,0 +1,188 @@
+{
+  "variant": "no-skill",
+  "run": 3,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 229705,
+    "duration_api_ms": 206000,
+    "num_turns": 33,
+    "total_cost_usd": 0.379,
+    "is_error": false,
+    "subtype": "success",
+    "usage": {
+      "input_tokens": 265,
+      "cache_creation_input_tokens": 51873,
+      "cache_read_input_tokens": 1465349,
+      "output_tokens": 25347
+    },
+    "driver": "console"
+  },
+  "skill_sha256": "4c35279c6e342b0fd8cc319dfe4aca7b889fa02053425280c5e869ddb175c5f9",
+  "case": "mp-05-diagnose",
+  "case_title": "Diagnose host visibility, 1-5",
+  "rubric_version": 3,
+  "artifacts": {
+    "policy_files": [
+      "diagnosis.json"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "diagnosis.json",
+    "exit_code": 0,
+    "stdout": "{\n  \"1\": {\n    \"cause\": \"hub_not_collecting\",\n    \"hostkey\": \"SHA=4e2b5c8a9f1d3e7a6b2c5f8e9d1a4c6b\",\n    \"last_agent_run\": \"2026-09-24T10:15:00+00:00\",\n    \"last_collected\": \"2026-09-23T14:30:00+00:00\"\n  },\n  \"2\": {\n    \"cause\": \"host_deleted_still_reporting\",\n    \"hostkey\": \"SHA=7f3d2e1a9c4b6e8f5a2d7c9e1b3f4a6d\",\n    \"still_reporting\": true,\n    \"last_report\": \"2026-09-24T12:45:00+00:00\"\n  },\n  \"3\": {\n    \"cause\": \"hostname_changed\",\n    \"hostkey\": \"SHA=2a5b8c1f4e7d9a3f6b2e8c5a9d1f3e7a\",\n    \"current_hostname\": \"workstation-prod-03\",\n    \"conflicts_with\": \"\"\n  },\n  \"4\": {\n    \"cause\": \"rbac_hidden\",\n    \"role\": \"viewer\",\n    \"class\": \"restricted::production\"\n  },\n  \"5\": {\n    \"cause\": \"no_problem\",\n    \"caused_by\": \"\"\n  }\n}\n",
+    "stderr": "",
+    "expected": [
+      "#1 agent_not_running",
+      "#2 host_deleted_still_reporting",
+      "#3 hostname_changed",
+      "#4 rbac_hidden debian_12_14",
+      "#5 duplicate_hostname"
+    ],
+    "got": [
+      "#1 hub_not_collecting",
+      "#2 host_deleted_still_reporting",
+      "#3 hostname_changed",
+      "#4 rbac_hidden",
+      "#5 no_problem"
+    ]
+  },
+  "checks": [
+    {
+      "id": "file_parses",
+      "label": "diagnosis.json written and parses",
+      "weight": 5,
+      "earned": 5,
+      "detail": "parses"
+    },
+    {
+      "id": "t1_cause",
+      "label": "#1: cause is agent_not_running",
+      "weight": 8,
+      "earned": 0,
+      "detail": "hub_not_collecting"
+    },
+    {
+      "id": "t1_hostkey",
+      "label": "#1: host001's hostkey",
+      "weight": 2,
+      "earned": 0,
+      "detail": "SHA=4e2b5c8a9f1d3e7a6b2c5f8e9d1a4c6b"
+    },
+    {
+      "id": "t1_last_agent_run",
+      "label": "#1: last agent run",
+      "weight": 6,
+      "earned": 0,
+      "detail": "2026-09-24T10:15:00+00:00 vs 2026-09-24T03:36:36+00:00 (+23904s)"
+    },
+    {
+      "id": "t1_last_collected",
+      "label": "#1: last collection (recent: the hub is collecting)",
+      "weight": 4,
+      "earned": 0,
+      "detail": "2026-09-23T14:30:00+00:00 vs 2026-09-24T13:20:53+00:00 (-82253s)"
+    },
+    {
+      "id": "t2_cause",
+      "label": "#2: cause is host_deleted_still_reporting",
+      "weight": 8,
+      "earned": 8,
+      "detail": "host_deleted_still_reporting"
+    },
+    {
+      "id": "t2_hostkey",
+      "label": "#2: host002's hostkey",
+      "weight": 2,
+      "earned": 0,
+      "detail": "SHA=7f3d2e1a9c4b6e8f5a2d7c9e1b3f4a6d"
+    },
+    {
+      "id": "t2_still_reporting",
+      "label": "#2: still reporting",
+      "weight": 4,
+      "earned": 4,
+      "detail": "True"
+    },
+    {
+      "id": "t2_last_report",
+      "label": "#2: last report attempt (now, not at deletion)",
+      "weight": 6,
+      "earned": 0,
+      "detail": "2026-09-24T12:45:00+00:00 vs 2026-09-24T13:20:54.465423+00:00 (-2154s)"
+    },
+    {
+      "id": "t3_cause",
+      "label": "#3: cause is hostname_changed",
+      "weight": 8,
+      "earned": 8,
+      "detail": "hostname_changed"
+    },
+    {
+      "id": "t3_hostkey",
+      "label": "#3: host003's hostkey",
+      "weight": 2,
+      "earned": 0,
+      "detail": "SHA=2a5b8c1f4e7d9a3f6b2e8c5a9d1f3e7a"
+    },
+    {
+      "id": "t3_current_hostname",
+      "label": "#3: its hostname now (hub.example.com)",
+      "weight": 3,
+      "earned": 0,
+      "detail": "workstation-prod-03"
+    },
+    {
+      "id": "t3_conflicts_with",
+      "label": "#3: collides with the hub's hostkey",
+      "weight": 5,
+      "earned": 0,
+      "detail": "missing"
+    },
+    {
+      "id": "t4_cause",
+      "label": "#4: cause is rbac_hidden",
+      "weight": 7,
+      "earned": 7,
+      "detail": "rbac_hidden"
+    },
+    {
+      "id": "t4_role",
+      "label": "#4: role web_team",
+      "weight": 5,
+      "earned": 0,
+      "detail": "viewer"
+    },
+    {
+      "id": "t4_class",
+      "label": "#4: the class host001 has (debian_12_14)",
+      "weight": 7,
+      "earned": 0,
+      "detail": "restricted::production"
+    },
+    {
+      "id": "t5_cause",
+      "label": "#5: cause is duplicate_hostname",
+      "weight": 10,
+      "earned": 0,
+      "detail": "no_problem"
+    },
+    {
+      "id": "t5_caused_by",
+      "label": "#5: caused by host003",
+      "weight": 8,
+      "earned": 0,
+      "detail": "missing"
+    }
+  ],
+  "score": 32,
+  "max_score": 100
+}

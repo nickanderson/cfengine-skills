@@ -1,0 +1,15 @@
+# Where the model's console session runs (run-eval.sh --driver console).
+#
+# A CFEngine user's workstation, minus anything that reaches around the task:
+# the CFEngine the grader validates with (the base image), cfbs and the
+# cfengine CLI, and the everyday tools a model reaches for. No vagrant,
+# podman or psql -- the Mission Portal cases say "through the API", and on
+# the host those led straight into the hub. claude itself is not installed:
+# the harness mounts the host's binary read-only, so the version under test
+# is the one on the workstation.
+ARG BASE=localhost/cfengine-test:3.27.0
+FROM ${BASE}
+RUN dnf install -y --setopt=install_weak_deps=False \
+        git jq procps-ng less which findutils diffutils file python3-pip \
+    && dnf clean all
+RUN pip3 install --no-cache-dir cfbs cfengine

@@ -1,0 +1,49 @@
+bundle agent motd
+{
+  vars:
+      "motd_file"
+        string => ifelse(
+          isvariable("def.motd_file"),
+          "$(def.motd_file)",
+          "/etc/motd"
+        ),
+        comment => "Path to MOTD file - configurable via def.motd_file";
+
+      "motd_enabled"
+        string => ifelse(
+          isvariable("def.motd_enabled"),
+          "$(def.motd_enabled)",
+          "true"
+        ),
+        comment => "Enable/disable MOTD management - configurable via def.motd_enabled";
+
+      "motd_content"
+        string => ifelse(
+          isvariable("def.motd_content"),
+          "$(def.motd_content)",
+          "Welcome to the system"
+        ),
+        comment => "MOTD message content - configurable via def.motd_content";
+
+  files:
+      "$(motd_file)"
+        create => "true",
+        edit_line => insert_motd_content("$(motd_content)"),
+        ifvarclass => "$(motd_enabled)_enabled",
+        comment => "Manage MOTD file with configurable content";
+
+  reports:
+    DEBUG::
+      "MOTD Policy: motd_file = $(motd_file)";
+      "MOTD Policy: motd_enabled = $(motd_enabled)";
+      "MOTD Policy: motd_content = $(motd_content)";
+}
+
+bundle edit_line insert_motd_content(content)
+{
+  delete_lines:
+      ".*";
+
+  insert_lines:
+      "$(content)";
+}

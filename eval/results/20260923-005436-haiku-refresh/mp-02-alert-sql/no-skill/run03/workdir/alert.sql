@@ -1,0 +1,1 @@
+SELECT h.hostkey, values->>'Host name' as hostname FROM inventory_new i JOIN v_Hosts h ON i.hostkey = h.hostkey WHERE h.deleted IS NULL AND values->>'Host name' IN (SELECT values->>'Host name' FROM inventory_new WHERE values->>'Host name' IS NOT NULL GROUP BY values->>'Host name' HAVING COUNT(DISTINCT hostkey) > 1)

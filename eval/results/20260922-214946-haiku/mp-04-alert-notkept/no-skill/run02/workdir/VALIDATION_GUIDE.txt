@@ -1,0 +1,79 @@
+Mission Portal Alert SQL Validation Guide
+==========================================
+
+Alert SQL Overview:
+The alert.sql file contains a SQL query that identifies hosts where promises 
+were NOT KEPT in their most recent agent execution. This query is ready to be 
+pasted into the Mission Portal alert editor.
+
+How to Validate and Deploy
+===========================
+
+Option 1: Using psql (Recommended)
+----------------------------------
+psql -h localhost -U cfpostgres -d cfdb < alert.sql
+
+Or with explicit password:
+PGPASSWORD="password" psql -h localhost -U cfpostgres -d cfdb < alert.sql
+
+Option 2: Mission Portal Web Interface
+--------------------------------------
+1. Log into Mission Portal (https://your-hub-ip)
+2. Navigate to: Alerts > Create New Alert or Manage Alerts  
+3. Select alert type: Custom SQL Query or Database Alert
+4. Paste the SQL from alert.sql into the query editor
+5. Click Test Query or Validate
+6. Set alert conditions (e.g., "Alert if returns 1 or more rows")
+7. Configure notification channels
+8. Save the alert
+
+Option 3: Command-line with sudo
+---------------------------------
+sudo -u postgres psql -d cfdb < alert.sql
+
+Database Schema Reference
+==========================
+
+The query uses these CFEngine Mission Portal tables:
+
+__hosts: Contains hostkey and host identification
+  Fields: hostkey, ipaddress, first_reported_time, last_reported_time
+  
+__inventory: Contains host metadata including hostname  
+  Fields: hostkey, inventory (jsonb with 'Host name', 'OS', etc.)
+  
+__promiseexecutions: Records of each promise execution
+  Fields: hostkey, executiontime, outcome (KEPT, REPAIRED, NOTKEPT)
+
+Query Logic
+===========
+
+The alert query:
+1. Identifies the latest execution time for each host
+2. Checks for promises with outcome = 'NOTKEPT' in latest execution
+3. Returns the hostname from the __inventory table
+4. Groups results to avoid duplicates
+5. Orders by hostname for easy reading
+
+Expected Results
+================
+
+Empty result set: All hosts have all promises kept (no alert)
+Non-empty result set: These hosts have not-kept promises (alert triggered)
+
+SQL Notes
+=========
+
+- Outcome values are case-sensitive: KEPT, REPAIRED, NOTKEPT
+- The JSONB extraction (->) requires PostgreSQL 9.3+
+- Remove the -- comments if alert UI doesn't support them
+- Designed for CFEngine Enterprise 3.27+
+
+Next Steps
+==========
+
+1. Validate the query against your hub's database
+2. Create the alert in Mission Portal web interface
+3. Test with a known not-kept promise scenario  
+4. Configure alert notifications
+5. Monitor the alert on your dashboard

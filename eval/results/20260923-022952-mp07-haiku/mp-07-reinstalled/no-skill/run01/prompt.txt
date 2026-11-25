@@ -1,0 +1,16 @@
+Our CFEngine Enterprise hub's Mission Portal is at $MP_URL. Credentials are in
+$MP_USER and $MP_PASSWORD; the certificate is self-signed.
+
+Some of our machines were reinstalled. Each came back with a new CFEngine
+identity (host key), and Mission Portal still has a record for its old one.
+We want to find those leftover records before cleaning them up.
+
+Write an executable script, stale-records.sh, that prints one line for every
+leftover record:
+
+    <stale hostkey>,<current hostkey>,<hostname>,<ip>
+
+where <current hostkey> is the record the reinstalled machine reports under
+now. A machine with several leftover records gets one line per record. Print
+nothing else on stdout. Do not delete anything. Run it against the hub and
+include its output in your reply.

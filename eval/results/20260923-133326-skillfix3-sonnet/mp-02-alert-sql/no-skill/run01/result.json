@@ -1,0 +1,97 @@
+{
+  "variant": "no-skill",
+  "run": 1,
+  "model": "sonnet",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 97198,
+    "duration_api_ms": 91730,
+    "num_turns": 15,
+    "total_cost_usd": 0.2694662,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "3e17662ebb50af5cfa9edbf1fe830720615d3c47176035014b89eac88a46a22e",
+  "case": "mp-02-alert-sql",
+  "case_title": "Custom-SQL alert condition: hosts sharing a hostname",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "alert.sql"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "alert.sql",
+    "exit_code": null,
+    "stdout": "SELECT h.hostkey, h.hostname, h.ipaddress\nFROM hosts h\nWHERE EXISTS (\n    SELECT 1\n    FROM hosts h2\n    WHERE h2.hostname = h.hostname\n      AND h2.hostkey <> h.hostkey\n)\nORDER BY h.hostname, h.hostkey;",
+    "stderr": "HTTP 500: An error occurred while querying the database.",
+    "expected": [
+      "SHA=06791f18efa2b15c5c71bcf452fa923126533938734039f0645e9f23694d24c5",
+      "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940",
+      "SHA=714a84049983de056ed0e9ae967982d31a9286c015d5151081914b677d029fd4",
+      "SHA=f20cfa67e6fe5edc7f0b5b0c8c335bd2e18107ea83140447313c2bdc799a89c5"
+    ],
+    "got": []
+  },
+  "checks": [
+    {
+      "id": "sql_present",
+      "label": "Condition written to alert.sql",
+      "weight": 5,
+      "earned": 5,
+      "detail": "alert.sql"
+    },
+    {
+      "id": "runs_standalone",
+      "label": "Runs as-is through /api/query (alert status)",
+      "weight": 10,
+      "earned": 0,
+      "detail": "HTTP 500: An error occurred while querying the database."
+    },
+    {
+      "id": "host_list_wrap",
+      "label": "Survives Mission Portal's host-list wrapper",
+      "weight": 20,
+      "earned": 0,
+      "detail": "HTTP 500: An error occurred while querying the database."
+    },
+    {
+      "id": "one_row_per_host",
+      "label": "One row per host (status counts rows)",
+      "weight": 15,
+      "earned": 0,
+      "detail": "did not run"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host sharing a hostname triggers",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 4"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No other host triggers",
+      "weight": 15,
+      "earned": 0,
+      "detail": "0 of 0 returned are duplicates"
+    },
+    {
+      "id": "current_state",
+      "label": "Uses current-state views, not history or base tables",
+      "weight": 15,
+      "earned": 15,
+      "detail": "clean"
+    }
+  ],
+  "score": 20.0,
+  "max_score": 100
+}

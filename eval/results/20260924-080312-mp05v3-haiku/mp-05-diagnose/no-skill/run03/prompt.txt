@@ -1,0 +1,52 @@
+Our CFEngine Enterprise hub's Mission Portal is at $MP_URL. Credentials are in
+$MP_USER and $MP_PASSWORD; the certificate is self-signed.
+
+Investigate each of the following through the Mission Portal API and find the
+actual cause -- the writer's own theory may be wrong.
+
+1.  "The data Mission Portal shows for host001 (192.168.56.3) looks stale. Is
+    the hub failing to collect from it? When did its agent last run, and when
+    did the hub last collect from it?"
+
+2.  "We deleted host002 (192.168.56.4) from Mission Portal, but the Health page
+    still complains about it. Is it still reporting to the hub, and when did it
+    last report?"
+
+3.  "We can't find host003 (192.168.56.5) in Mission Portal any more. Where did
+    it go?"
+
+4.  "Alice says host001 doesn't show up in her Mission Portal host list, but I
+    can see it. What exactly hides it from her?"
+
+5.  "The Health page lists our hub (192.168.56.2) itself. Is something wrong
+    with the hub? If the cause is another host, which one?"
+
+For each one, pick the cause from this list:
+
+    hub_not_collecting            the hub cannot reach or collect from the host
+    agent_not_running             the agent is not running on schedule on the host
+    policy_failing                the agent runs but its policy run fails
+    host_deleted_still_reporting  the host was deleted in Mission Portal but keeps reporting
+    host_never_collected          the host bootstrapped but the hub never collected from it
+    hostname_changed              the host now reports under a different hostname
+    duplicate_hostname            two hosts report the same hostname
+    duplicate_identity            two machines share one host key
+    rbac_hidden                   the user's role does not grant access to the host
+    license_exceeded              the hub is over its license and stopped collecting
+    no_problem                    nothing is wrong
+
+Write your findings to diagnosis.json in exactly this shape. Hostkeys are
+SHA=...; timestamps are ISO 8601 with a UTC offset (e.g.
+2026-01-31T14:05:00+00:00).
+
+{
+  "1": {"cause": "", "hostkey": "", "last_agent_run": "", "last_collected": ""},
+  "2": {"cause": "", "hostkey": "", "still_reporting": true, "last_report": ""},
+  "3": {"cause": "", "hostkey": "", "current_hostname": "", "conflicts_with": ""},
+  "4": {"cause": "", "role": "", "class": ""},
+  "5": {"cause": "", "caused_by": ""}
+}
+
+"conflicts_with" is the hostkey of the other host involved; "class" is the
+single class responsible; "caused_by" is the hostkey of the host causing it.
+Also give a short explanation for each in your reply.

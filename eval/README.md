@@ -33,7 +33,37 @@ Each side runs in a throwaway jail:
 - a fresh `CLAUDE_CONFIG_DIR` holding only a copy of `.credentials.json`, so the
   global `CLAUDE.md`, pre-installed skills (including `cfengine-policy-reference`
   from ce-toolkit), plugins and project settings cannot leak into either side
-- `--strict-mcp-config`, `--no-session-persistence`
+- `--strict-mcp-config` (and `--no-session-persistence` under `--driver print`)
+- no `CLAUDE*` variables from the shell that started the harness: started
+  from inside Claude Code, they make every nested `claude` a child of that
+  session (it wrote no transcript, and shared its messaging socket)
+
+### Driver: a console session, not `claude -p`
+
+By default (`--driver console`) each invocation is what a user at a terminal
+does: `lib/console-claude.sh` starts interactive `claude` in a detached
+`screen` session, waits for the prompt box, pastes the case prompt (bracketed
+paste, so its newlines stay newlines), presses Enter, waits for the turn to
+end (a Stop hook in the jail's settings records it), types `/cost`, and
+`/exit`s. First-run screens (theme, folder trust, the bypass-permissions
+warning) are pre-answered in the jail's config, since a returning user never
+sees them. The run keeps `console.log` (everything the terminal showed),
+`screen-final.txt` and `transcript.jsonl`, and the driver writes `raw.json`
+in the `-p` shape so grading is unchanged: the answer is the last assistant
+text, turns are API responses in the transcript, cost and API time are what
+`/cost` showed. `--driver print` runs `claude -p` as before; the driver is
+recorded in `run-info.json` and each run's `meta.json`.
+
+The console session runs in a container, not on the workstation:
+`container/Containerfile` builds `localhost/cfeval-console:<hash>` on the
+grader's CFEngine image (so the model validates with the CFEngine the grader
+uses), adds cfbs, the cfengine CLI, git and jq, and leaves out vagrant,
+podman and psql, which on the host led around the "through the API" cases
+straight into the hub. The host's `claude` binary is mounted read-only, the
+jail at its own path, the docs checkout read-only; the session's environment
+is only the case's `env` and the skill's config. `--session-image none`
+runs it on the workstation instead. Compare effort only
+between runs of the same driver: the two count turns differently.
 
 Both sides get the same base system prompt. The **only** difference is that
 `with-skill` installs the skill and is told to use it. Nothing in either prompt
@@ -152,6 +182,99 @@ synthetic `def.json` full of sentinel values and checks the sentinels actually
 reach the variables. That proves the tunables are wired up, not just shaped right.
 It is opt-in because it evaluates model-generated policy.
 
+## Mission Portal cases: the live hub is the oracle
+
+Cases prefixed `mp-` measure the `mission-portal` skill. There is no
+`cf-promises` for a REST call, so these are graded against a real CFEngine
+Enterprise hub instead of a container. Each case names its skill and grader in
+`case.json` (`"skill": "mission-portal"`, `"grader": "mission-portal"`), and a
+run measures one skill at a time:
+
+```bash
+export MP_URL=https://192.168.56.2 MP_USER=admin MP_PASSWORD=...
+./eval/run-eval.sh --skill mission-portal --variant no-skill   # baseline, no skill needed
+./eval/run-eval.sh --case mp-01-health
+```
+
+The model gets the same `MP_*` variables, and the grader runs the script it
+wrote against the hub. The expected answer is **re-derived from the hub's own
+API at grading time**, never stored in the case, so a hub with different hosts
+still grades correctly. Stored answers would go stale the moment a host
+reports.
+
+Two things keep a live oracle honest:
+
+- **Preflight.** A healthy hub makes an empty answer correct. Each case lists
+  the state it needs (`expect.require_categories`), and `bin/grade_mp.py
+  --preflight` refuses to start the run unless the hub is in that state.
+  `lib/mp-setup-hub.sh` puts it there; for `mp-01-health` that means
+  stopping `cf-execd` on one client and deleting another while it keeps
+  reporting, then waiting ~10 minutes for the first to be flagged.
+- **Credentials never reach the results.** `secret_env` names the variables to
+  redact; the harness passes their values to `scrub.py`, which replaces them in
+  every artifact. Models echo the password into scripts and replies.
+
+**Diagnosis, not retrieval.** `mp-05-diagnose` lists five, numbered, each
+written as a user would write it -- what they see and their theory, not a
+Health category -- and asks for the cause from a fixed list plus the evidence:
+hostkeys, timestamps with a UTC offset, the role and the single class that
+hides a host. Two of the writers'
+theories are wrong (the hub *is* collecting; the hub is *not* at fault), one
+answer needs the class inside an exclude expression, and one timestamp has a
+decoy: `/api/hosts/deleted` keeps the last report from before deletion, while
+the host is still trying now. Timestamps the hub keeps moving are accepted if
+recent, not future. It uses the `mp-01` fixtures plus user `alice` with role
+`web_team`, both from `lib/mp-setup-hub.sh`.
+
+**Cases that change the hub.** `mp-06-remove-host` asks for a script that
+removes a host for good, so every run destroys its own target. A case can name
+a `pre_run` script (relative to `eval/`, with arguments) that the harness runs
+before each model invocation; mp-06 uses `lib/mp-synthetic-hosts.sh create`
+to make `decomm01.example.com` and a decoy, `lab-decomm01.example.com`, with
+Mission Portal's data generator. The grader recreates them again, runs the
+model's script, and judges only the resulting state -- the hub's status codes
+are the traps: `DELETE /api/host/:key` returns 202 for any key, existing or
+not; permanent deletion of a live host is a 404; and the path from older docs,
+`/api/host/delete-permanently/...`, is taken as a regular delete of a host
+called "delete-permanently", 202 again. host002 must survive in the deleted
+list. The grader needs `MP_VAGRANT_DIR`; the harness strips it from the
+model's environment. Controls: a correct script 100, a substring match with a
+regular delete 50, the old docs path 75.
+
+mp-06 is also the one case that can wreck the hub: its agents hold a login
+that deletes hosts, and on 2026-09-23 a no-skill agent deleted every real host
+while testing its script. So it is marked `"exclusive"` -- run-eval takes a
+lock per hub, shared by read-only runs and exclusive for mp-06, which waits for
+other hub runs and holds new ones off -- and its `post_run` is
+`lib/mp-recover-hub.sh`. That checks the real hosts after every invocation
+(about two seconds when nothing is wrong) and brings back any that are gone:
+undelete, re-bootstrap the client, collect, and if the record is still empty,
+purge it and bootstrap again. It keeps host002 deleted-but-reporting and
+restarts its `cf-serverd` if its reports go stale. Run it by hand when a
+preflight fails after anything that deletes hosts.
+
+**Stay under the hub's license.** A free Enterprise hub covers 25 clients.
+Past that, `cf-hub` stops collecting from every host, and the Health fixtures
+quietly turn into "Unreachable hosts" -- the preflight caught exactly this
+after 1120 generator hosts were added for `mp-03-all-hosts`. That case needs
+a hub licensed past 1122 hosts (the eval hub has 2000, from nova's
+`make_license_file` against the hub's `ppkeys/localhost.pub`, installed as
+`/var/cfengine/license.dat`).
+
+**Synthetic fleets.** mp-03's `pre_run` is `lib/mp-clone-hosts.sh create
+1118`: host001's real reporting rows cloned into 1118 hosts, each with its own
+hostkey, names, IP, MACs, UUID and matching classes, and fresh enough to stay
+off the Health page. Its `post_run` removes them after grading, so they never
+reach another case's fixtures; `mp-setup-hub.sh` removes any an interrupted
+run left. Mission Portal's own data generator is kept only for mp-06, whose
+two hosts are never inspected: its values (MD5 product names, CFEngine 3.14
+classes on a 3.27 hub) give a fleet away as fake.
+
+Scores are only comparable across runs against a hub of the same version,
+since the health categories and API shapes move between releases.
+`run-info.json` does not record the hub version yet -- read it from
+`GET /api` when comparing.
+
 ## Layout
 
 ```
@@ -161,9 +284,11 @@ eval/
   bin/aggregate.py         summary.json + append history.jsonl
   bin/report.py            self-contained HTML report for one run
   bin/compare.py           cross-model comparison from history.jsonl
+  bin/grade_mp.py          grade a Mission Portal case against the live hub
   bin/refresh-sys-vars.sh  dump this host's real sys.* variables
   cases/<id>/prompt.txt    the prompt
   cases/<id>/case.json     rubric weights and expectations
+  lib/mp-setup-hub.sh      put the eval hub into the state the mp-* cases grade
   lib/extra-sys-vars.txt   real sys vars a plain container does not define
   cache/sys-vars.txt       regenerated at the start of every run
   results/<timestamp>/     run-info.json, summary.json, SKILL.md.snapshot,
@@ -186,6 +311,25 @@ eval/
   One dumbbell per model: the orange dot is no-skill, the blue dot is with-skill,
   and the connector length is the skill delta. The faint rule behind each dot is
   the run range, so a 5-run spread is visible instead of hidden inside a mean.
+
+### Effort: turns, cost, time
+
+Beside the score, every run records what the answer cost to produce: agent
+turns, USD, and wall time, from the Claude CLI's own result. They are aggregated
+per variant (mean with min-max, in `summary.json` and `history.jsonl`), shown
+as a second row of tiles with an **effort delta**, and as a `Turns` column
+(`no-skill -> with-skill`) in `compare.html`.
+
+They are deliberately **not part of the score**. Folding them in would re-base
+every case, and would let a fast-but-partly-wrong answer tie a slow-but-right
+one. Read them together: the score says whether the skill makes the answer
+right, the effort says whether it makes it cheap. On a case the unaided model
+can solve by exploring -- `mp-01-health`, where Sonnet reached 96.7 without the
+skill but took 19 to 90 turns ($0.37 to $2.62) doing it -- effort is the only
+place the skill can show up.
+
+Turns and cost vary a lot between runs of the same prompt (the range above is
+three runs), so compare means over `--runs 3` or more, not single runs.
 
 Regenerate the comparison by hand at any time — it reads only `history.jsonl`, so
 it needs no model calls:

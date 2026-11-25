@@ -1,0 +1,94 @@
+{
+  "variant": "no-skill",
+  "run": 1,
+  "model": "haiku",
+  "exit_code": 0,
+  "cli": {
+    "duration_ms": 239860,
+    "duration_api_ms": 211743,
+    "num_turns": 64,
+    "total_cost_usd": 0.4297292,
+    "is_error": false,
+    "subtype": "success"
+  },
+  "skill_sha256": "55aa96b67b3091e07f9d79288e9238bec51dd493958ed7a1109a7f71a10e7b0f",
+  "case": "mp-04-alert-notkept",
+  "case_title": "Custom-SQL alert condition: hosts with a promise not kept",
+  "rubric_version": 1,
+  "artifacts": {
+    "policy_files": [
+      "alert.sql"
+    ],
+    "augments_files": [],
+    "sources": {
+      "policy": "script"
+    },
+    "policy_bytes": 0
+  },
+  "engine": "live hub https://192.168.56.2",
+  "validation": {},
+  "grader": "mission-portal",
+  "hub": {
+    "script": "alert.sql",
+    "exit_code": null,
+    "stdout": "-- Alert: Hosts with Unmet Promises (Not Kept) in Most Recent Agent Run\n-- =====================================================================\n--\n-- PURPOSE: Triggers for every host where any promise was not kept in its latest\n--          agent execution, enabling rapid identification of compliance failures.\n--\n-- LOGIC:\n--   1. Join Hosts table with Promise_not_kept table using hostkey\n--   2. For each host, find the most recent promise failure timestamp\n--   3. Return all hosts that have promise failures in their latest run\n--\n-- TABLE NOTES:\n--   - Promise_not_kept: Contains rows for each promise marked \"not kept\"\n--     Columns: hostkey, changetimestamp (timestamp of the report)\n--   - Hosts: Standard hosts table with connection status\n--     Columns: hostkey, hostname, ipaddress, lastreporttimestamp\n--\n-- =====================================================================\n-- PRIMARY QUERY (Most Common in CFEngine Enterprise 3.15+)\n-- =====================================================================\n\nSELECT DISTINCT\n    h.hostkey,\n    h.hostname,\n    h.ipaddress,\n    h.lastreporttimestamp as most_recent_agent_run\nFROM Hosts h\nINNER JOIN Promise_not_kept pnk ON h.hostkey = pnk.hostkey\nWHERE pnk.changetimestamp = (\n    SELECT MAX(changetimestamp)\n    FROM Promise_not_kept\n    WHERE hostkey = h.hostkey\n)\nORDER BY h.hostname;\n\n\n-- =====================================================================\n-- ALTERNATIVE QUERIES (if above table names don't match your environment)\n-- =====================================================================\n\n-- Alternative 1: If table uses underscore naming (lowercase)\n-- SELECT DISTINCT\n--     h.hostkey,\n--     h.hostname,\n--     h.ipaddress,\n--     h.lastreporttimestamp as most_recent_agent_run\n-- FROM Hosts h\n-- INNER JOIN promise_not_kept pnk ON h.hostkey = pnk.hostkey\n-- WHERE pnk.changetimestamp = (\n--     SELECT MAX(changetimestamp)\n--     FROM promise_not_kept\n--     WHERE hostkey = h.hostkey\n-- )\n-- ORDER BY h.hostname;\n\n\n-- Alternative 2: If table tracks promise status (kept/not_kept/repaired)\n-- SELECT DISTINCT\n--     h.hostkey,\n--     h.hostname,\n--     h.ipaddress,\n--     h.lastreporttimestamp as most_recent_agent_run\n-- FROM Hosts h\n-- INNER JOIN promise_execution pe ON h.hostkey = pe.hostkey\n-- WHERE pe.status = 'not_kept'\n--   AND pe.timestamp = (\n--       SELECT MAX(timestamp)\n--       FROM promise_execution\n--       WHERE hostkey = h.hostkey\n--   )\n-- ORDER BY h.hostname;\n\n\n-- Alternative 3: If using older CFEngine version with different table name\n-- SELECT DISTINCT\n--     h.hostkey,\n--     h.hostname,\n--     h.ipaddress,\n--     h.lastreporttimestamp as most_recent_agent_run\n-- FROM Hosts h\n-- WHERE EXISTS (\n--     SELECT 1\n--     FROM PromiseNotKept pnk\n--     WHERE pnk.hostkey = h.hostkey\n--       AND pnk.timestamp >= h.lastreporttimestamp - INTERVAL '1 hour'\n-- )\n-- ORDER BY h.hostname;\n\n\n-- =====================================================================\n-- HOW TO USE THIS ALERT\n-- =====================================================================\n-- 1. Copy the PRIMARY QUERY above into the Mission Portal alert editor\n-- 2. If the table name doesn't exist, try each ALTERNATIVE QUERY\n-- 3. To find the correct table name:\n--    - In the alert editor, test the query with different table names\n--    - Check CFEngine Enterprise documentation for your version\n--    - Query information_schema.tables to list all available tables\n-- 4. Once working, the alert will automatically execute on schedule and\n--    notify administrators of any hosts with unmet promises",
+    "stderr": "HTTP 403: Query accesses restricted database resources",
+    "expected": [
+      "SHA=6bb77202d78f69e7c1fe23857c06c08af688854de965d8d5820ae1b1cae4c940"
+    ],
+    "got": []
+  },
+  "checks": [
+    {
+      "id": "sql_present",
+      "label": "Condition written to alert.sql",
+      "weight": 5,
+      "earned": 5,
+      "detail": "alert.sql"
+    },
+    {
+      "id": "runs_standalone",
+      "label": "Runs as-is through /api/query (alert status)",
+      "weight": 10,
+      "earned": 0,
+      "detail": "HTTP 403: Query accesses restricted database resources"
+    },
+    {
+      "id": "host_list_wrap",
+      "label": "Survives Mission Portal's host-list wrapper",
+      "weight": 20,
+      "earned": 0,
+      "detail": "HTTP 403: Query accesses restricted database resources"
+    },
+    {
+      "id": "one_row_per_host",
+      "label": "One row per host (status counts rows)",
+      "weight": 15,
+      "earned": 0,
+      "detail": "did not run"
+    },
+    {
+      "id": "hosts_recall",
+      "label": "Every host sharing a hostname triggers",
+      "weight": 20,
+      "earned": 0.0,
+      "detail": "0 of 1"
+    },
+    {
+      "id": "hosts_precision",
+      "label": "No other host triggers",
+      "weight": 15,
+      "earned": 0,
+      "detail": "0 of 0 returned are duplicates"
+    },
+    {
+      "id": "current_state",
+      "label": "Uses current-state views, not history or base tables",
+      "weight": 15,
+      "earned": 15,
+      "detail": "clean"
+    }
+  ],
+  "score": 20.0,
+  "max_score": 100
+}
